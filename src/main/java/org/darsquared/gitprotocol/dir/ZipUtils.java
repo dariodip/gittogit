@@ -1,8 +1,11 @@
 package org.darsquared.gitprotocol.dir;
 
+import org.zeroturnaround.zip.FileSource;
+import org.zeroturnaround.zip.ZipEntrySource;
 import org.zeroturnaround.zip.ZipUtil;
 
 import java.io.*;
+import java.util.List;
 
 public class ZipUtils {
 
@@ -15,4 +18,16 @@ public class ZipUtils {
         ZipUtil.pack(fileToZip, new File(fileName));
     }
 
+    public static void addFiles(List<File> toZip, String filename) {
+        ZipEntrySource[] entries = new ZipEntrySource[toZip.size()];
+        for (int i = 0; i < toZip.size(); i++) {
+            File f = toZip.get(i);
+            entries[i] = new FileSource(f.getName(), f);
+        }
+        ZipUtil.addEntries(new File(filename), entries, new File(filename));
+    }
+
+    public static void unzipFile(File zipFile, String outDirectory) {
+        ZipUtil.unpack(zipFile, new File(outDirectory));
+    }
 }

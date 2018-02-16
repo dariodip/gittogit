@@ -1,7 +1,8 @@
 package org.darsquared.gitprotocol;
 
-
 import org.darsquared.gitprotocol.dir.ZipUtils;
+import org.darsquared.gitprotocol.storage.Storage;
+import org.zeroturnaround.zip.commons.FileUtils;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -20,18 +21,31 @@ public class GitProtocolImpl implements GitProtocol {
     public static final Charset STD_ENCODING = StandardCharsets.UTF_8;
     public static final String STD_ALGORITHM = "SHA-1";
 
+    private final Storage storage;
+    private boolean created;
+    private File gitFolder;
+    private File directory;
+
+    // dependency injection B
+    public GitProtocolImpl(Storage _storage) throws IOException{
+        this.storage = _storage;
+        this.created = false;
+    }
+
     public boolean createRepository(String _repo_name, File _directory) {
-        File gitFolder = null;
+        if (created) {
+            return false;
+        }
+        this.directory = _directory;
         try {
-            gitFolder = this.checkRepo(_repo_name, _directory.getParentFile());
+            this.gitFolder = this.checkRepo(_repo_name, _directory.getParentFile());
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
         try {
             // create a zip archive of the full repo
-            String repoNameMd = getNameDigest(_repo_name);  // get SHA-1 of the repo's name
-            File gitZipFile = new File(gitFolder.getAbsolutePath() + "/" + repoNameMd + ".zip");
+            File gitZipFile = new File(gitFolder.getAbsolutePath() + "/" + _repo_name + ".zip");
             ZipUtils.zipFile(_directory, gitZipFile.getAbsolutePath());
 
             // get the digest of the zip file in order to easily check if there were some changes
@@ -48,26 +62,76 @@ public class GitProtocolImpl implements GitProtocol {
             e.printStackTrace();
             return false;
         }
-
+        this.created = true;
         return true;
     }
 
     public boolean addFilesToRepository(String _repo_name, List<File> files) {
-
-        return false;
-
+        if (!created) {
+            return false;
+        }
+        String filename = gitFolder.getAbsolutePath() + "/" + _repo_name + ".zip";
+        ZipUtils.addFiles(files, filename);
+        return true;
     }
 
     public boolean commit(String _repo_name, String _message) {
-        return false;
+        if (!created) {
+            return false;  // repo does not exist
+        }
+        File gitZipFile = new File(gitFolder.getAbsolutePath() + "/" + _repo_name + ".zip.0");
+        ZipUtils.zipFile(this.directory, gitZipFile.getAbsolutePath());  // temp zip
+
+        File gitFile = new File(gitFolder.getAbsolutePath() + "/" + GIT_FILE); // file in which there is old hash
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(gitFile));
+            String currentHash = br.readLine();  // read old hash
+            String mdZip = getZipDigest(gitZipFile.getAbsolutePath());  // get new hash
+            if (mdZip.equals(currentHash)) {
+                return false; // you cannot commit an untouched repo! this does not make sense
+            }
+            File oldFile = new File(gitFolder.getAbsolutePath() + "/" + _repo_name + ".zip"); // delete old file
+            if (!oldFile.delete()) {
+                return false;
+            }
+            gitFile.renameTo(oldFile); // rename new file as old file
+
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(gitFile, false));
+            bufferedWriter.write(mdZip); // write new hash
+
+            bufferedWriter.close();
+            br.close();
+        } catch (Exception e ){
+            e.printStackTrace();
+        }
+        return true;
     }
 
     public String push(String _repo_name) {
-        return null;
+        if (!created) {
+            return "";
+        }
+        File gitZipFile = new File(gitFolder.getAbsolutePath() + "/" + _repo_name + ".zip");
+        try {
+            storage.put(_repo_name, Files.readAllBytes(Paths.get(gitZipFile.toURI())));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return ""; // TODO
     }
 
     public String pull(String _repo_name) {
-        return null;
+        String zipPath = gitFolder.getAbsolutePath() + "/" + _repo_name + ".zip";
+        byte[] data = (byte[]) storage.get(_repo_name);
+        try {
+            FileOutputStream fos = new FileOutputStream(gitFolder.getAbsolutePath() + "/" + _repo_name + ".zip");
+            fos.write(data);
+            fos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        ZipUtils.unzipFile(new File(zipPath), this.directory.getAbsolutePath());
+        return "";
     }
 
 
@@ -99,12 +163,6 @@ public class GitProtocolImpl implements GitProtocol {
             throw new Exception("Cannot create git folder");
         }
         return gitFolder;
-    }
-
-    private String getNameDigest(String _repo_name) throws NoSuchAlgorithmException {
-        MessageDigest md = MessageDigest.getInstance(STD_ALGORITHM);
-        byte[] md5bytes = md.digest(_repo_name.getBytes(STD_ENCODING));
-        return mdToString(md5bytes);
     }
 
     private String getZipDigest(String zipPath) throws NoSuchAlgorithmException, IOException  {
