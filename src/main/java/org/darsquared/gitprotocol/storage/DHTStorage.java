@@ -12,7 +12,7 @@ import net.tomp2p.storage.Data;
 import java.io.IOException;
 import java.net.InetAddress;
 
-public class DHTStorage implements Storage<String, Data> {
+public class DHTStorage implements Storage<String, Object> {
 
     final private PeerDHT peer;
 
@@ -28,17 +28,17 @@ public class DHTStorage implements Storage<String, Data> {
     }
 
     @Override
-    public boolean put(String key, Data data) {
-        peer.put(Number160.createHash(key)).data(data).start().awaitUninterruptibly();
+    public boolean put(String key, Object data) throws IOException {
+        peer.put(Number160.createHash(key)).data(new Data(data)).start().awaitUninterruptibly();
         return true; // TODO
     }
 
     @Override
-    public Data get(String key) {
+    public Object get(String key) throws ClassNotFoundException, IOException {
         FutureGet futureGet = peer.get(Number160.createHash(key)).start();
         futureGet.awaitUninterruptibly();
         if (futureGet.isSuccess()) {
-            return futureGet.dataMap().values().iterator().next();
+            return futureGet.dataMap().values().iterator().next().object();
         }
         return null;
     }

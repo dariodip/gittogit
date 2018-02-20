@@ -122,7 +122,16 @@ public class GitProtocolImpl implements GitProtocol {
 
     public String pull(String _repo_name) {
         String zipPath = gitFolder.getAbsolutePath() + "/" + _repo_name + ".zip";
-        byte[] data = (byte[]) storage.get(_repo_name);
+        byte[] data = null;
+        try {
+            data = (byte[]) storage.get(_repo_name);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            return ""; // TODO
+        } catch (ClassNotFoundException cnfe) {
+            cnfe.printStackTrace();
+            return ""; // TODO
+        }
         try {
             FileOutputStream fos = new FileOutputStream(gitFolder.getAbsolutePath() + "/" + _repo_name + ".zip");
             fos.write(data);
