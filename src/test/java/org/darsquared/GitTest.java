@@ -3,7 +3,6 @@ package org.darsquared;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.darsquared.gitprotocol.GitProtocol;
 import org.darsquared.gitprotocol.GitProtocolImpl;
 import org.darsquared.gitprotocol.storage.DHTStorage;
 
@@ -19,6 +18,7 @@ public class GitTest extends TestCase {
     private static final String FILENAME = "0";
     private static final String INITIAL_TEXT = "Some useless text";
     private static final String OTHER_TEXT = "Other useless text";
+    public static final String REPO_NAME = "first_attempt";
 
     public GitTest(String testName) {
         super(testName);
@@ -42,22 +42,23 @@ public class GitTest extends TestCase {
         }
         File repo = new File(DIRECTORY + FAKE_REPO);
         logger.info("Creating repository");
-        assertTrue(gp.createRepository("first_attempt", repo));
-        File gitFolder = new File(DIRECTORY + FAKE_REPO + GitProtocolImpl.GIT_FOLDER);
-        logger.info("Checking if repository exists");
-        assertTrue(gitFolder.exists());
-        logger.info("Checking if git file exists");
-        File gitFile = new File(DIRECTORY + FAKE_REPO + GitProtocolImpl.GIT_FOLDER + GitProtocolImpl.GIT_FILE);
-        assertTrue(gitFile.exists());
-        logger.info("Checking if git file has the correct length");
-        assertEquals(countLinesInFile(gitFile), 1);
-
+        assertTrue(gp.createRepository(REPO_NAME, repo));
+        logger.info("Let's do our first commit");
+        assertTrue(gp.commit("first_attempt", "First commit"));
+        String firstCommitDigest = gp.getLastDigest();
+        logger.info("First commit done with hash: " + firstCommitDigest);
         // Now let's edit our file a little
         writeSingleLine(textFile, OTHER_TEXT);
         logger.info("Trying to make a commit");
         assertTrue(gp.commit("first_attempt", "I did it"));
-        logger.info("Removing repository");
-        // assertTrue(gp.deleteRepo(repo));
+        String lastCommitDigest = gp.getLastDigest();
+        logger.info("Second commit done with hash: " + lastCommitDigest);
+        assertFalse(firstCommitDigest.equals(lastCommitDigest));
+        logger.info("Let's do a void commit");
+        gp.commit(REPO_NAME, "No changes");
+        String voidCommit = gp.getLastDigest();
+        logger.info("Third commit done with hash: " + voidCommit);
+        assertTrue(voidCommit.equals(lastCommitDigest));
     }
 
     @Override

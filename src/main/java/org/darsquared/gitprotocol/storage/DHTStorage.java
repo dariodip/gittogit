@@ -8,11 +8,12 @@ import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
+import org.darsquared.gitprotocol.dir.Repository;
 
 import java.io.IOException;
 import java.net.InetAddress;
 
-public class DHTStorage implements Storage<String, Object> {
+public class DHTStorage implements Storage<String, Repository> {
 
     final private PeerDHT peer;
 
@@ -28,17 +29,17 @@ public class DHTStorage implements Storage<String, Object> {
     }
 
     @Override
-    public boolean put(String key, Object data) throws IOException {
+    public boolean put(String key, Repository data) throws IOException {
         peer.put(Number160.createHash(key)).data(new Data(data)).start().awaitUninterruptibly();
         return true; // TODO
     }
 
     @Override
-    public Object get(String key) throws ClassNotFoundException, IOException {
+    public Repository get(String key) throws ClassNotFoundException, IOException {
         FutureGet futureGet = peer.get(Number160.createHash(key)).start();
         futureGet.awaitUninterruptibly();
         if (futureGet.isSuccess()) {
-            return futureGet.dataMap().values().iterator().next().object();
+            return (Repository) futureGet.dataMap().values().iterator().next().object();
         }
         return null;
     }
