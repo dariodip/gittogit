@@ -7,7 +7,10 @@ import org.darsquared.gitprotocol.GitProtocolImpl;
 import org.darsquared.gitprotocol.storage.DHTStorage;
 
 import java.io.*;
+import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class GitTest extends TestCase {
 
@@ -18,7 +21,8 @@ public class GitTest extends TestCase {
     private static final String FILENAME = "0";
     private static final String INITIAL_TEXT = "Some useless text";
     private static final String OTHER_TEXT = "Other useless text";
-    public static final String REPO_NAME = "first_attempt";
+    private static final String REPO_NAME = "first_attempt";
+    private static final String[] COMMITS = {"First commit", "Second commit", "Void commit"};
 
     public GitTest(String testName) {
         super(testName);
@@ -44,21 +48,27 @@ public class GitTest extends TestCase {
         logger.info("Creating repository");
         assertTrue(gp.createRepository(REPO_NAME, repo));
         logger.info("Let's do our first commit");
-        assertTrue(gp.commit("first_attempt", "First commit"));
+        assertTrue(gp.commit("first_attempt", COMMITS[0]));
         String firstCommitDigest = gp.getLastDigest();
         logger.info("First commit done with hash: " + firstCommitDigest);
         // Now let's edit our file a little
         writeSingleLine(textFile, OTHER_TEXT);
         logger.info("Trying to make a commit");
-        assertTrue(gp.commit("first_attempt", "I did it"));
+        assertTrue(gp.commit("first_attempt", COMMITS[1]));
         String lastCommitDigest = gp.getLastDigest();
         logger.info("Second commit done with hash: " + lastCommitDigest);
         assertFalse(firstCommitDigest.equals(lastCommitDigest));
         logger.info("Let's do a void commit");
-        gp.commit(REPO_NAME, "No changes");
+        gp.commit(REPO_NAME, COMMITS[2]);
         String voidCommit = gp.getLastDigest();
         logger.info("Third commit done with hash: " + voidCommit);
         assertTrue(voidCommit.equals(lastCommitDigest));
+        List<String> commitMessages = gp.getCommits()
+                .parallelStream()
+                .map(c -> c.getMessage())
+                .collect(Collectors.toList());
+        logger.info("Check if all commits are done");
+        assertTrue(commitMessages.containsAll(Arrays.asList(COMMITS)));
     }
 
     @Override

@@ -6,22 +6,35 @@ import org.darsquared.gitprotocol.dir.exception.NotADirectoryException;
 
 import java.io.*;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Vector;
 
 /**
- * Repository class abstracts a repository:
- *      a folder with all their files and a digest of that.
+ * {@code Repository} class abstracts a repository:
+ *      a folder with all their;
+ *      a digest of that folder;
+ *      a set of commits (see class {@link Commit}.
  */
 public class Repository implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    private final ArrayList<File> files;
-    private final ArrayList<Commit> commits;
-    private String repoName;
-    private String rootDirectory;
-    private String digest;
 
+    private final ArrayList<File> files;        // list of files
+    private final ArrayList<Commit> commits;    // list of commits
+    private String repoName;                    // name of the repository
+    private String rootDirectory;               // root directory of the repository
+    private String digest;                      // digest with the current file state
 
+    /**
+     * Creates a repository.
+     * @param rootDirectory  directory in which there are files to track
+     * @param repoName  name of the repository
+     * @throws NotADirectoryException  thrown if {@code rootDirectory} is not a directory
+     * @throws IOException  thrown if there were problems in accessing the filesystem
+     * @throws NoSuchAlgorithmException  thrown if there were some error in digesting file content
+     */
     public Repository(String rootDirectory, String repoName) throws NotADirectoryException, IOException, NoSuchAlgorithmException {
         this.rootDirectory = rootDirectory;
         this.repoName = repoName;
@@ -30,22 +43,43 @@ public class Repository implements Serializable {
         this.commits = new ArrayList<Commit>();
     }
 
+    /**
+     * Returns all the files of the repository
+     * @return list of files
+     */
     public ArrayList<File> getFiles() {
         return files;
     }
 
+    /**
+     * Returns root directory
+     */
     public String getRootDirectory() {
         return rootDirectory;
     }
 
+    /**
+     * Returns last digest of the repository
+     * @return MD5 of the full repository
+     */
     public String getDigest() {
         return digest;
     }
 
-    public ArrayList<Commit> getCommits() {
-        return commits;
+    /**
+     * Returns a list of all the commits.
+     * n.b. the list is just a clone in order to prevent unauthorized access to commits.
+     * @return List of {@link Commit}
+     */
+    public List<Commit> getCommits() {
+        return (ArrayList<Commit>) commits.clone();
     }
 
+    /**
+     * Adds new files to the repository so that they can be tracked.
+     * @param files {@link List} of {@link File}.
+     * @return true if the file list is correct, false otherwise.
+     */
     public boolean addFiles(List<File> files) {
         if (files.size() < 1) return false;
         files
@@ -55,39 +89,67 @@ public class Repository implements Serializable {
         return true;
     }
 
-    public void computeDigest() throws IOException, NoSuchAlgorithmException {
-        this.digest = getFolderDigest();
-    }
-
+    /**
+     * Adds a new commit to the set.
+     * @param message Commit message
+     * @param repoName name of the repository
+     * @throws IOException thrown if file access goes bad
+     * @throws NoSuchAlgorithmException thrown if digest goes bad
+     */
     public void addCommit(String message, String repoName) throws IOException, NoSuchAlgorithmException {
         String digest = getFolderDigest();
         Commit c = new Commit(message, repoName, digest);
         commits.add(c);
     }
 
+    /**
+     * Replace all the edited files with the new ones.
+     * @return true if ok, false otherwise
+     */
     public boolean replaceFiles() {
-        // TODO
+        // TODO https://www.journaldev.com/861/java-copy-file
         return false;
     }
 
+    /**
+     * Returns the {@link ArrayList} of all the files.
+     * @return ArrayList of {@link File}
+     * @throws NotADirectoryException thrown if the root directory is a file instead
+     */
     private ArrayList<File> getAllFiles() throws NotADirectoryException {
         ArrayList<File> files = new ArrayList<File>();
         File root = new File(this.rootDirectory);
         if (!root.isDirectory()) {
             throw new NotADirectoryException("Root is not a directory");
         }
-        File[] filesInRoot = root.listFiles();
-        Arrays.
-                stream(filesInRoot != null ? filesInRoot : new File[0])
-                .parallel()
-                .forEach(f -> files.add(f));
+        fileList(root.getAbsolutePath(), files);
         return files;
     }
 
-    public String getLastDigest() {
-        return getDigests().get(0);
+    /**
+     * Recursive method to list all files from a folder (including all the subfolders).
+     * @param directoryName (local or global) root directory
+     * @param files {@link ArrayList} of files
+     */
+    private void fileList(String directoryName, ArrayList<File> files) {
+        File directory = new File(directoryName);
+
+        // get all the files from a directory
+        File[] fList = directory.listFiles();
+        assert fList != null;
+        for (File file : fList) {
+            if (file.isFile()) {
+                files.add(file);
+            } else if (file.isDirectory()) {
+                fileList(file.getAbsolutePath(), files);
+            }
+        }
     }
 
+    /**
+     * Returns the digests of all the commits
+     * @return java.util.ArrayList of digests
+     */
     public ArrayList<String> getDigests() {
         ArrayList<String> digests = new ArrayList<>(commits.size());
         commits
@@ -97,6 +159,12 @@ public class Repository implements Serializable {
         return digests;
     }
 
+    /**
+     * Compute digest of the whole folder.
+     * @return digest of the folder.
+     * @throws NoSuchAlgorithmException something goes bad with digest
+     * @throws IOException something goes bad with IO
+     */
     private String getFolderDigest() throws NoSuchAlgorithmException, IOException {
         File folder = new File(rootDirectory);
         assert (folder.isDirectory());  // We already checked it, but redo it just for safety
@@ -107,6 +175,7 @@ public class Repository implements Serializable {
         try {
             String md5Hash = DigestUtils.md5Hex(seqStream);
             seqStream.close();
+            this.digest = md5Hash;
             return md5Hash;
         }
         catch (IOException e) {
@@ -114,27 +183,31 @@ public class Repository implements Serializable {
         }
     }
 
-    private void collectInputStreams(File dir,
-                                     List<FileInputStream> foundStreams,
-                                     boolean includeHiddenFiles) {
+    /**
+     *
+     * Recursive method to list all FileInputStream from a folder (including all the subfolders).
+     * @param dir (local or global) root directory
+     * @param foundStreams {@link ArrayList} of files
+     * @param includeHiddenFiles true if you want to exclude hidden files
+     */
+    private void collectInputStreams(File dir, List<FileInputStream> foundStreams, boolean includeHiddenFiles) {
 
         File[] fileList = dir.listFiles();
         assert (fileList != null);
         Arrays.sort(fileList, (f1, f2) -> f1.getName().compareTo(f2.getName())); // Need in reproducible order
 
         for (File f : fileList) {
-            if (!includeHiddenFiles && f.getName().startsWith(".")) {
-                // Skip it
-            }
-            else if (f.isDirectory()) {
-                collectInputStreams(f, foundStreams, includeHiddenFiles);
-            }
-            else {
-                try {
-                    foundStreams.add(new FileInputStream(f));
+            if (includeHiddenFiles || !f.getName().startsWith(".")) {
+                if (f.isDirectory()) {
+                    collectInputStreams(f, foundStreams, includeHiddenFiles);
                 }
-                catch (FileNotFoundException e) {
-                    throw new AssertionError(e.getMessage() + ": file should never not be found!");
+                else {
+                    try {
+                        foundStreams.add(new FileInputStream(f));
+                    }
+                    catch (FileNotFoundException e) {
+                        throw new AssertionError(e.getMessage() + ": file should never not be found!");
+                    }
                 }
             }
         }

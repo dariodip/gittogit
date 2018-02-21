@@ -9,19 +9,27 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
-// TODO move zip/unzip in push and pull
 
 public class GitProtocolImpl implements GitProtocol {
 
     private final Storage storage;
     private Repository repo;
 
-    // dependency injection B-)
-    public GitProtocolImpl(Storage _storage) {
+    /**
+     * Implementation of {@link GitProtocol} interface.
+     * @param _storage {@link Storage} object to store and query data.
+     */
+    public GitProtocolImpl(Storage _storage) {     // dependency injection B-)
         this.storage = _storage;
         this.repo = null;
     }
 
+    /**
+     * Create a repository for the directory ({@code _directory})
+     * @param _repo_name a String, the name of the repository.
+     * @param _directory a File, the directory where create the repository.
+     * @return true if ok, false otherwise
+     */
     public boolean createRepository(String _repo_name, File _directory) {
         if (this.repo != null) {
             return false;
@@ -37,9 +45,22 @@ public class GitProtocolImpl implements GitProtocol {
         return true;
     }
 
+    /**
+     * Adds new files to the repository. Newly added files are now tracked.
+     * @param _repo_name a String, the name of the repository.
+     * @param files a list of Files to be added to the repository.
+     * @return true if ok, false otherwise
+     */
     public boolean addFilesToRepository(String _repo_name, List<File> files) {
         return this.repo != null && this.repo.addFiles(files);
     }
+
+    /**
+     * Creates a commit.
+     * @param _repo_name a String, the name of the repository.
+     * @param _message a String, the message for this commit.
+     * @return true if ok, false otherwise
+     */
 
     public boolean commit(String _repo_name, String _message) {
         if (this.repo == null) {
@@ -49,10 +70,16 @@ public class GitProtocolImpl implements GitProtocol {
             this.repo.addCommit(_message, _repo_name);
         } catch (Exception e ){
             e.printStackTrace();
+            return false;
         }
         return true;
     }
 
+    /**
+     * Pushes files on the storage.
+     * @param _repo_name _repo_name a String, the name of the repository.
+     * @return a String, operation message
+     */
     public String push(String _repo_name) {
         // TODO check conflicts
         if (this.repo == null) {
@@ -67,10 +94,15 @@ public class GitProtocolImpl implements GitProtocol {
         return ""; // TODO
     }
 
+    /**
+     * Pulls files from the storage.
+     * @param _repo_name _repo_name a String, the name of the repository.
+     * @return a String, operation message
+     */
     public String pull(String _repo_name) {
-        // TODO check conflicts
         try {
-            this.repo = ((DHTStorage)storage).get(_repo_name);
+            Repository pulledRepo = ((DHTStorage)storage).get(_repo_name);
+            // TODO
             this.repo.replaceFiles();
         } catch (ClassNotFoundException | IOException e) {
             e.printStackTrace();
@@ -79,7 +111,10 @@ public class GitProtocolImpl implements GitProtocol {
     }
 
     public String getLastDigest() {
-        return this.repo.getLastDigest();
+        return this.repo.getDigest();
     }
 
+    public List<Commit> getCommits() {
+        return this.repo.getCommits();
+    }
 }
