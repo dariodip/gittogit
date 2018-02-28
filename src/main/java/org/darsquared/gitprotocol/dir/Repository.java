@@ -105,9 +105,27 @@ public class Repository implements Serializable {
     /**
      * Replace all the edited files with the new ones.
      * @return true if ok, false otherwise
+     * @param editedFiles list of file edited to update in local
      */
-    public boolean replaceFiles() {
+    public boolean replaceFiles(List<File> editedFiles) {
         // TODO https://www.journaldev.com/861/java-copy-file
+        for (File editedFile: editedFiles) {
+            InputStream is = null;
+            OutputStream os = null;
+            try {
+                is = new FileInputStream(editedFile);
+                os = new FileOutputStream(new File(getRootDirectory()+editedFile.getName()));
+                byte[] buffer = new byte[1024];
+                int length;
+                while ((length = is.read(buffer)) > 0) {
+                    os.write(buffer, 0, length);
+                }
+                is.close();
+                os.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         return false;
     }
 

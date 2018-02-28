@@ -7,6 +7,7 @@ import org.darsquared.gitprotocol.storage.Storage;
 import java.io.File;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -86,12 +87,18 @@ public class GitProtocolImpl implements GitProtocol {
             return "";
         }
         try {
-            ((DHTStorage)this.storage).put(_repo_name, this.repo);
-        } catch (IOException e) {
+            Repository remoteRepo = ((DHTStorage)storage).get(_repo_name);
+            if (this.repo.getDigests().contains(remoteRepo.getDigest())) {
+                ((DHTStorage)this.storage).put(_repo_name, this.repo);
+                return "Push Successfull";
+            } else {
+                return  "Pull required";
+            }
+        } catch (IOException | ClassNotFoundException e) {
             // TODO
             e.printStackTrace();
         }
-        return ""; // TODO
+        return "Something gone wrong...";
     }
 
     /**
@@ -102,12 +109,23 @@ public class GitProtocolImpl implements GitProtocol {
     public String pull(String _repo_name) {
         try {
             Repository pulledRepo = ((DHTStorage)storage).get(_repo_name);
-            // TODO
-            this.repo.replaceFiles();
+            //TODO
+            if(pulledRepo.getDigest().equals(this.repo.getDigest())) {
+                return "No file changed";
+            }
+            //TODO dovrebbe essere aggiornata la lista dei commit?
+//            List<Commit> localCommits = this.repo.getCommits();
+//            for (Commit commit: pulledRepo.getCommits()) {
+//                if(!localCommits.contains(commit)) {
+//                    this.repo.addCommit(commit.getMessage(),commit.getRepoName());
+//                }
+//            }
+
+            this.repo.replaceFiles(pulledRepo.getFiles());
         } catch (ClassNotFoundException | IOException e) {
             e.printStackTrace();
         }
-        return "";
+        return "Pull successfull";
     }
 
     public String getLastDigest() {
