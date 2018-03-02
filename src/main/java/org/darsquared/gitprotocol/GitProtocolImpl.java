@@ -112,6 +112,9 @@ public class GitProtocolImpl implements GitProtocol {
             if(pulledRepo.getDigest().equals(this.repo.getDigest())) {
                 return Operationmessage.NO_FILE_CHANGED;
             }
+            // TODO sono uguali
+            System.out.println(this.repo.getFiles());
+            System.out.println(pulledRepo.getFiles());
             this.repo.replaceFiles(pulledRepo.getFiles());
             this.repo = pulledRepo;
         } catch (ClassNotFoundException | IOException e) {
