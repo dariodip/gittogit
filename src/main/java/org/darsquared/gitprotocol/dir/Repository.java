@@ -124,9 +124,10 @@ public class Repository implements Serializable {
                 os.close();
             } catch (IOException e) {
                 e.printStackTrace();
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
     /**
