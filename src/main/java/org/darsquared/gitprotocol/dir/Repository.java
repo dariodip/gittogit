@@ -109,12 +109,16 @@ public class Repository implements Serializable {
      */
     public boolean replaceFiles(List<File> editedFiles) {
         // TODO https://www.journaldev.com/861/java-copy-file
+        // https://github.com/chenlonggang/postman/tree/master/src/org/chen/p2p
+        List<File> toRename = new ArrayList<>(editedFiles.size());
         for (File editedFile: editedFiles) {
             InputStream is = null;
             OutputStream os = null;
             try {
                 is = new FileInputStream(editedFile);
-                os = new FileOutputStream(new File(getRootDirectory()+editedFile.getName()));
+                File tempFile = new File(getRootDirectory() + "/" +editedFile.getName() + ".tmp");
+                os = new FileOutputStream(tempFile);
+                toRename.add(tempFile);
                 byte[] buffer = new byte[1024];
                 int length;
                 while ((length = is.read(buffer)) > 0) {
@@ -126,6 +130,8 @@ public class Repository implements Serializable {
                 e.printStackTrace();
             }
         }
+        editedFiles.forEach(f -> f.delete());
+        toRename.forEach(f -> f.renameTo(new File(f.getAbsolutePath().substring(0, f.getAbsolutePath().length() - 4))));
         return false;
     }
 
