@@ -81,17 +81,21 @@ public class GitProtocolImpl implements GitProtocol {
      * @return a String, operation message
      */
     public String push(String _repo_name) {
-        // TODO check conflicts
         if (this.repo == null) {
-            return "";
+            return "Something gone wrong...";
         }
         try {
-            ((DHTStorage)this.storage).put(_repo_name, this.repo);
-        } catch (IOException e) {
-            // TODO
+            Repository remoteRepo = ((DHTStorage)storage).get(_repo_name); // I am pulling the remote repo (HEAD)
+            if (this.repo.getDigests().contains(remoteRepo.getDigest())) { // my repo is correct
+                ((DHTStorage)this.storage).put(_repo_name, this.repo);
+                return "Push Successfull";
+            } else {        // I am trying to push another branch
+                return  "Pull required";
+            }
+        } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
+            return "Something gone wrong: " + e.getMessage();
         }
-        return ""; // TODO
     }
 
     /**
@@ -102,12 +106,15 @@ public class GitProtocolImpl implements GitProtocol {
     public String pull(String _repo_name) {
         try {
             Repository pulledRepo = ((DHTStorage)storage).get(_repo_name);
-            // TODO
-            this.repo.replaceFiles();
+            if(pulledRepo.getDigest().equals(this.repo.getDigest())) {
+                return "No file changed";
+            }
+            this.repo.replaceFiles(pulledRepo.getFiles());
+            this.repo = pulledRepo;
         } catch (ClassNotFoundException | IOException e) {
             e.printStackTrace();
         }
-        return "";
+        return "Pull successfull";
     }
 
     public String getLastDigest() {
