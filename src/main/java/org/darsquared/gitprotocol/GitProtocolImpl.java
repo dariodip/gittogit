@@ -7,7 +7,6 @@ import org.darsquared.gitprotocol.storage.Storage;
 import java.io.File;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -82,23 +81,21 @@ public class GitProtocolImpl implements GitProtocol {
      * @return a String, operation message
      */
     public String push(String _repo_name) {
-        // TODO check conflicts
         if (this.repo == null) {
-            return "";
+            return "Something gone wrong...";
         }
         try {
-            Repository remoteRepo = ((DHTStorage)storage).get(_repo_name);
-            if (this.repo.getDigests().contains(remoteRepo.getDigest())) {
+            Repository remoteRepo = ((DHTStorage)storage).get(_repo_name); // I am pulling the remote repo (HEAD)
+            if (this.repo.getDigests().contains(remoteRepo.getDigest())) { // my repo is correct
                 ((DHTStorage)this.storage).put(_repo_name, this.repo);
                 return "Push Successfull";
-            } else {
+            } else {        // I am trying to push another branch
                 return  "Pull required";
             }
         } catch (IOException | ClassNotFoundException e) {
-            // TODO
             e.printStackTrace();
+            return "Something gone wrong: " + e.getMessage();
         }
-        return "Something gone wrong...";
     }
 
     /**
@@ -109,19 +106,11 @@ public class GitProtocolImpl implements GitProtocol {
     public String pull(String _repo_name) {
         try {
             Repository pulledRepo = ((DHTStorage)storage).get(_repo_name);
-            //TODO
             if(pulledRepo.getDigest().equals(this.repo.getDigest())) {
                 return "No file changed";
             }
-            //TODO dovrebbe essere aggiornata la lista dei commit?
-//            List<Commit> localCommits = this.repo.getCommits();
-//            for (Commit commit: pulledRepo.getCommits()) {
-//                if(!localCommits.contains(commit)) {
-//                    this.repo.addCommit(commit.getMessage(),commit.getRepoName());
-//                }
-//            }
-
             this.repo.replaceFiles(pulledRepo.getFiles());
+            this.repo = pulledRepo;
         } catch (ClassNotFoundException | IOException e) {
             e.printStackTrace();
         }
