@@ -5,6 +5,7 @@ import org.darsquared.gitprotocol.Commit;
 import org.darsquared.gitprotocol.dir.exception.NotADirectoryException;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -109,19 +110,11 @@ public class Repository implements Serializable {
      */
     public boolean replaceFiles(List<File> editedFiles) {
         // TODO https://www.journaldev.com/861/java-copy-file
+        File tmp = new File(getRootDirectory()+"tmp");
         for (File editedFile: editedFiles) {
-            InputStream is = null;
-            OutputStream os = null;
             try {
-                is = new FileInputStream(editedFile);
-                os = new FileOutputStream(new File(getRootDirectory()+editedFile.getName()));
-                byte[] buffer = new byte[1024];
-                int length;
-                while ((length = is.read(buffer)) > 0) {
-                    os.write(buffer, 0, length);
-                }
-                is.close();
-                os.close();
+                Files.copy(editedFile.toPath(), tmp.toPath());
+                Files.copy(tmp.toPath(), editedFile.toPath());
             } catch (IOException e) {
                 e.printStackTrace();
                 return false;
