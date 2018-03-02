@@ -12,6 +12,7 @@ import org.darsquared.gitprotocol.dir.Repository;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.Collection;
 
 /**
  * A storage using DHT.
@@ -65,6 +66,10 @@ public class DHTStorage implements Storage<String, Repository> {
         FutureGet futureGet = peer.get(Number160.createHash(key)).start();
         futureGet.awaitUninterruptibly();
         if (futureGet.isSuccess()) {
+            Collection<Data> dataMapValues = futureGet.dataMap().values();
+            if (dataMapValues.isEmpty()) {
+                return null;
+            }
             return (Repository) futureGet.dataMap().values().iterator().next().object();
         }
         return null;

@@ -82,19 +82,19 @@ public class GitProtocolImpl implements GitProtocol {
      */
     public String push(String _repo_name) {
         if (this.repo == null) {
-            return "Something gone wrong...";
+            return Operationmessage.NO_REPO_FOUND;
         }
         try {
             Repository remoteRepo = ((DHTStorage)storage).get(_repo_name); // I am pulling the remote repo (HEAD)
-            if (this.repo.getDigests().contains(remoteRepo.getDigest())) { // my repo is correct
+            if (remoteRepo == null || this.repo.getDigests().contains(remoteRepo.getDigest())) { // my repo is correct
                 ((DHTStorage)this.storage).put(_repo_name, this.repo);
-                return "Push Successfull";
+                return Operationmessage.PUSH_SUCCESSFULL;
             } else {        // I am trying to push another branch
-                return  "Pull required";
+                return  Operationmessage.PULL_REQUIRED;
             }
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
-            return "Something gone wrong: " + e.getMessage();
+            return Operationmessage.SOMETHING_GONE_WRONG + ": " + e.getMessage();
         }
     }
 
@@ -106,15 +106,18 @@ public class GitProtocolImpl implements GitProtocol {
     public String pull(String _repo_name) {
         try {
             Repository pulledRepo = ((DHTStorage)storage).get(_repo_name);
+            if (pulledRepo == null) {
+                return Operationmessage.NO_REPO_FOUND;
+            }
             if(pulledRepo.getDigest().equals(this.repo.getDigest())) {
-                return "No file changed";
+                return Operationmessage.NO_FILE_CHANGED;
             }
             this.repo.replaceFiles(pulledRepo.getFiles());
             this.repo = pulledRepo;
         } catch (ClassNotFoundException | IOException e) {
             e.printStackTrace();
         }
-        return "Pull successfull";
+        return Operationmessage.PULL_SUCCESSFULL;
     }
 
     public String getLastDigest() {
