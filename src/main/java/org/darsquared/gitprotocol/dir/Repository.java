@@ -5,11 +5,9 @@ import org.darsquared.gitprotocol.Commit;
 import org.darsquared.gitprotocol.dir.exception.NotADirectoryException;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Vector;
+import java.util.*;
 
 /**
  * {@code Repository} class abstracts a repository:
@@ -20,6 +18,8 @@ import java.util.Vector;
 public class Repository implements Serializable {
 
     private static final long serialVersionUID = 1L;
+
+    private final Map<File, byte[]> filemap;
 
     private final ArrayList<File> files;        // list of files
     private final ArrayList<Commit> commits;    // list of commits
@@ -41,6 +41,18 @@ public class Repository implements Serializable {
         this.files = getAllFiles();
         this.digest = getFolderDigest();
         this.commits = new ArrayList<Commit>();
+        this.filemap = new HashMap<>();
+        for (File f: this.files) {
+            this.filemap.put(f, Files.readAllBytes(f.toPath()));
+        }
+    }
+
+    /**
+     * Returns the filemap of the repository
+     * @return map of file-bytearray
+     */
+    public Map<File, byte[]> getFilemap() {
+        return filemap;
     }
 
     /**
@@ -86,6 +98,7 @@ public class Repository implements Serializable {
                 .parallelStream()
                 .filter(f -> f.getAbsolutePath().startsWith(this.rootDirectory))
                 .forEach(f -> this.files.add(f));
+        //TODO aggiornare filemap
         return true;
     }
 
@@ -100,6 +113,29 @@ public class Repository implements Serializable {
         String digest = getFolderDigest();
         Commit c = new Commit(message, repoName, digest);
         commits.add(c);
+    }
+
+    /**
+     * Replace all the edited files with the new ones.
+     * @return true if ok, false otherwise
+     * @param filemap map of file edited and their content to update in local
+     */
+    public boolean replaceFilesFromMap(Map<File,byte[]> filemap) {
+        for(File editedFile: filemap.keySet()) {
+            OutputStream os = null;
+            try {
+                File localFile = new File(getRootDirectory() + "/" +editedFile.getName());
+                os = new FileOutputStream(localFile);
+                os.write(filemap.get(editedFile));
+                os.flush();
+                os.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+                return false;
+            }
+            this.filemap.put(editedFile,filemap.get(editedFile));
+        }
+        return true;
     }
 
     /**

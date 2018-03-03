@@ -115,6 +115,7 @@ public class GitProtocolImpl implements GitProtocol {
             // TODO sono uguali
             System.out.println(this.repo.getFiles());
             System.out.println(pulledRepo.getFiles());
+            //TODO lanciare replaceFileWithMap invece di replace file
             this.repo.replaceFiles(pulledRepo.getFiles());
             this.repo = pulledRepo;
         } catch (ClassNotFoundException | IOException e) {
