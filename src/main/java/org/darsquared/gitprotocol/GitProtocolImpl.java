@@ -37,7 +37,6 @@ public class GitProtocolImpl implements GitProtocol {
         try {
             this.repo = new Repository(_directory.getAbsolutePath(), _repo_name);
         } catch (IOException e) {
-            e.printStackTrace(); // TODO
             return false;
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
@@ -52,7 +51,11 @@ public class GitProtocolImpl implements GitProtocol {
      * @return true if ok, false otherwise
      */
     public boolean addFilesToRepository(String _repo_name, List<File> files) {
-        return this.repo != null && this.repo.addFiles(files);
+        try {
+            return this.repo != null && this.repo.addFiles(files);
+        } catch (IOException ex) {
+            return false;
+        }
     }
 
     /**
@@ -105,19 +108,16 @@ public class GitProtocolImpl implements GitProtocol {
      */
     public String pull(String _repo_name) {
         try {
-            Repository pulledRepo = ((DHTStorage)storage).get(_repo_name);
-            if (pulledRepo == null) {
-                return Operationmessage.NO_REPO_FOUND;
+            Repository pulledRepo = ((DHTStorage)storage).get(_repo_name);  // let's get remote repo
+            if (pulledRepo == null) {                                       // no one
+                return Operationmessage.NO_REPO_FOUND;                      // wth do you want to pull?
             }
-            if(pulledRepo.getDigest().equals(this.repo.getDigest())) {
-                return Operationmessage.NO_FILE_CHANGED;
+            if(pulledRepo.getDigest().equals(this.repo.getDigest())) {      // you don't pushed new one
+                return Operationmessage.NO_FILE_CHANGED;                    // :D
             }
-            // TODO sono uguali
-            System.out.println(this.repo.getFiles());
-            System.out.println(pulledRepo.getFiles());
-            //TODO lanciare replaceFileWithMap invece di replace file
-            this.repo.replaceFiles(pulledRepo.getFiles());
-            this.repo = pulledRepo;
+            // if you have arrived here, everything is ok
+            this.repo.replaceFilesFromMap(pulledRepo.getFilemap());         // replace files
+            this.repo = pulledRepo;                                         // replace repository
         } catch (ClassNotFoundException | IOException e) {
             e.printStackTrace();
         }

@@ -56,16 +56,17 @@ public class AppTest extends TestCase {
         assertEquals(gitProtocol.pull(REPO_NAME), Operationmessage.NO_FILE_CHANGED);
         log.info("Now let's edit the file a little");
         writeSingleLine(REPO_FILE, SECOND_STRING);
+        assertEquals(readSingleLine(REPO_FILE), SECOND_STRING);
         log.info("Commit and pull");
         assertTrue(gitProtocol.commit(REPO_NAME, "A little edit"));
+        assertEquals(readSingleLine(REPO_FILE), SECOND_STRING);  // unchanged
         assertEquals(gitProtocol.pull(REPO_NAME), Operationmessage.PULL_SUCCESSFULL);
         assertEquals(readSingleLine(REPO_FILE), INITIAL_STRING);
-
     }
 
     public void tearDown() throws Exception {
         super.tearDown();
-        writeSingleLine(REPO_FILE, INITIAL_STRING);
+     //   writeSingleLine(REPO_FILE, INITIAL_STRING);
     }
 
     /*********************************

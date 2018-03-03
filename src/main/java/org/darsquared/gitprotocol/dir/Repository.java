@@ -5,9 +5,11 @@ import org.darsquared.gitprotocol.Commit;
 import org.darsquared.gitprotocol.dir.exception.NotADirectoryException;
 
 import java.io.*;
-import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+
+import static java.nio.file.Files.readAllBytes;
 
 /**
  * {@code Repository} class abstracts a repository:
@@ -40,10 +42,10 @@ public class Repository implements Serializable {
         this.repoName = repoName;
         this.files = getAllFiles();
         this.digest = getFolderDigest();
-        this.commits = new ArrayList<Commit>();
+        this.commits = new ArrayList<>();
         this.filemap = new HashMap<>();
         for (File f: this.files) {
-            this.filemap.put(f, Files.readAllBytes(f.toPath()));
+            this.filemap.put(f, readAllBytes(f.toPath()));
         }
     }
 
@@ -92,14 +94,22 @@ public class Repository implements Serializable {
      * @param files {@link List} of {@link File}.
      * @return true if the file list is correct, false otherwise.
      */
-    public boolean addFiles(List<File> files) {
+    public boolean addFiles(List<File> files) throws IOException {
+        boolean[] ok = {true};
         if (files.size() < 1) return false;
         files
                 .parallelStream()
                 .filter(f -> f.getAbsolutePath().startsWith(this.rootDirectory))
-                .forEach(f -> this.files.add(f));
-        //TODO aggiornare filemap
-        return true;
+                .forEach(f -> {
+                    this.files.add(f);
+                    try {
+                        this.filemap.put(f, readAllBytes(Paths.get(f.toURI())));
+                    } catch (IOException e) {
+                        ok[0] = false;
+                        e.printStackTrace();
+                    }
+                });
+        return ok[0];
     }
 
     /**
@@ -144,8 +154,6 @@ public class Repository implements Serializable {
      * @param editedFiles list of file edited to update in local
      */
     public boolean replaceFiles(List<File> editedFiles) {
-        // TODO https://www.journaldev.com/861/java-copy-file
-        // https://github.com/chenlonggang/postman/tree/master/src/org/chen/p2p
         List<File> toRename = new ArrayList<>(editedFiles.size());
         for (File editedFile: editedFiles) {
             InputStream is = null;
