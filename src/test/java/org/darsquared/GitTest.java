@@ -4,6 +4,7 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.darsquared.gitprotocol.GitProtocolImpl;
+import org.darsquared.gitprotocol.dir.Repository;
 import org.darsquared.gitprotocol.storage.DHTStorage;
 
 import java.io.*;
@@ -14,7 +15,7 @@ import java.util.stream.Collectors;
 
 public class GitTest extends TestCase {
 
-    private static final Logger logger = Logger.getLogger(GitTest.class.getName());
+    private static final Logger log = Logger.getLogger(GitTest.class.getName());
 
     private static final String DIRECTORY = "resources/";
     private static final String FAKE_REPO = "somefiles/";
@@ -22,7 +23,9 @@ public class GitTest extends TestCase {
     private static final String INITIAL_TEXT = "Some useless text";
     private static final String OTHER_TEXT = "Other useless text";
     private static final String REPO_NAME = "first_attempt";
-    private static final String[] COMMITS = {"First commit", "Second commit", "Void commit"};
+    private static final String[] COMMITS = {Repository.FIRST_COMMIT_MESSAGE, "Second commit", "Third commit"};
+    private static final File TEXT_FILE = new File(DIRECTORY + FAKE_REPO + FILENAME);
+
 
     public GitTest(String testName) {
         super(testName);
@@ -32,11 +35,21 @@ public class GitTest extends TestCase {
         return new TestSuite(GitTest.class);
     }
 
-    public void testMessageDigest() throws IOException {
-        logger.info("Test started. Good luck!");
-        File textFile = new File(DIRECTORY + FAKE_REPO + FILENAME);
-        assertTrue(textFile.exists());
-        assertEquals(readSingleLine(textFile), INITIAL_TEXT);  // just a warm up
+
+    public void setUp() throws Exception {
+        super.setUp();
+        log.info("Creating master node");
+        writeSingleLine(TEXT_FILE, INITIAL_TEXT);
+    }
+
+    /**
+     *  This test aims to check the correctness of hashing on files
+     */
+    public void testMessagesDigest() throws IOException {
+        log.info("Test started. Good luck!");
+        assertTrue(TEXT_FILE.exists());                         // Ok there is the file
+        assertEquals(readSingleLine(TEXT_FILE), INITIAL_TEXT);  // just a warm up
+        // Creating DHT and Gitprotocol
         GitProtocolImpl gp = null;
         try {
             gp = new GitProtocolImpl(new DHTStorage(0, 4000, "127.0.0.1", 4000));
@@ -45,37 +58,41 @@ public class GitTest extends TestCase {
             return;
         }
         File repo = new File(DIRECTORY + FAKE_REPO);
-        logger.info("Creating repository");
+        log.info("Creating repository");
         assertTrue(gp.createRepository(REPO_NAME, repo));
-        logger.info("Let's do our first commit");
-        assertTrue(gp.commit("first_attempt", COMMITS[0]));
         String firstCommitDigest = gp.getLastDigest();
-        logger.info("First commit done with hash: " + firstCommitDigest);
+        log.info("First commit done with hash: " + firstCommitDigest);
         // Now let's edit our file a little
-        writeSingleLine(textFile, OTHER_TEXT);
-        logger.info("Trying to make a commit");
-        assertTrue(gp.commit("first_attempt", COMMITS[1]));
+        writeSingleLine(TEXT_FILE, OTHER_TEXT);
+        assertEquals(OTHER_TEXT, readSingleLine(TEXT_FILE)); // ok, no jokes for us
+        log.info("Trying to make a commit");
+        log.info("Let's do our first commit");
+        assertTrue(gp.commit(REPO_NAME, COMMITS[1]));
         String lastCommitDigest = gp.getLastDigest();
-        logger.info("Second commit done with hash: " + lastCommitDigest);
+        log.info("Second commit done with hash: " + lastCommitDigest);
         assertFalse(firstCommitDigest.equals(lastCommitDigest));
-        logger.info("Let's do a void commit");
-        gp.commit(REPO_NAME, COMMITS[2]);
+        log.info("Let's do a void commit");
+        assertFalse(gp.commit(REPO_NAME, COMMITS[2]));
         String voidCommit = gp.getLastDigest();
-        logger.info("Third commit done with hash: " + voidCommit);
+        log.info("Third commit done with hash: " + voidCommit);
         assertTrue(voidCommit.equals(lastCommitDigest));
+        writeSingleLine(TEXT_FILE, INITIAL_TEXT);
+        assertEquals(INITIAL_TEXT, readSingleLine(TEXT_FILE));
+        assertTrue(gp.commit(REPO_NAME, COMMITS[2]));
+        assertEquals(firstCommitDigest, gp.getLastDigest());
         List<String> commitMessages = gp.getCommits()
                 .parallelStream()
                 .map(c -> c.getMessage())
                 .collect(Collectors.toList());
-        logger.info("Check if all commits are done");
+        commitMessages.forEach(log::info);  // all my commits
+        log.info("Check if all commits are done");
         assertTrue(commitMessages.containsAll(Arrays.asList(COMMITS)));
     }
 
     @Override
     public void tearDown() throws IOException {
-        logger.info("Tear down");
-        File textFile = new File(DIRECTORY + FAKE_REPO + FILENAME);
-        writeSingleLine(textFile, INITIAL_TEXT);
+        log.info("Tear down");
+        writeSingleLine(TEXT_FILE, INITIAL_TEXT);
     }
 
     /*********************************
