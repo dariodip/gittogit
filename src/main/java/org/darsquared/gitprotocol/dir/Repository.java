@@ -43,6 +43,7 @@ public class Repository implements Serializable {
         this.files = getAllFiles();
         this.digest = getFolderDigest();
         this.commits = new ArrayList<>();
+        commits.add(new Commit("First commit", repoName, this.digest));
         this.filemap = new HashMap<>();
         for (File f: this.files) {
             this.filemap.put(f, readAllBytes(f.toPath()));
@@ -62,7 +63,7 @@ public class Repository implements Serializable {
      * @return list of files
      */
     public ArrayList<File> getFiles() {
-        return files;
+        return (ArrayList<File>) files.clone();
     }
 
     /**
@@ -86,6 +87,7 @@ public class Repository implements Serializable {
      * @return List of {@link Commit}
      */
     public List<Commit> getCommits() {
+        assert commits != null;
         return (ArrayList<Commit>) commits.clone();
     }
 
@@ -119,10 +121,15 @@ public class Repository implements Serializable {
      * @throws IOException thrown if file access goes bad
      * @throws NoSuchAlgorithmException thrown if digest goes bad
      */
-    public void addCommit(String message, String repoName) throws IOException, NoSuchAlgorithmException {
+    public boolean addCommit(String message, String repoName) throws IOException, NoSuchAlgorithmException {
         String digest = getFolderDigest();
+        if (digest.equals(this.digest) && commits.size() > 0) {
+            return false;
+        }
+        this.digest = digest;
         Commit c = new Commit(message, repoName, digest);
         commits.add(c);
+        return true;
     }
 
     /**
@@ -149,43 +156,12 @@ public class Repository implements Serializable {
     }
 
     /**
-     * Replace all the edited files with the new ones.
-     * @return true if ok, false otherwise
-     * @param editedFiles list of file edited to update in local
-     */
-    public boolean replaceFiles(List<File> editedFiles) {
-        List<File> toRename = new ArrayList<>(editedFiles.size());
-        for (File editedFile: editedFiles) {
-            InputStream is = null;
-            OutputStream os = null;
-            try {
-                is = new FileInputStream(editedFile);
-                File tempFile = new File(getRootDirectory() + "/" +editedFile.getName() + ".tmp");
-                os = new FileOutputStream(tempFile);
-                toRename.add(tempFile);
-                byte[] buffer = new byte[1024];
-                int length;
-                while ((length = is.read(buffer)) > 0) {
-                    os.write(buffer, 0, length);
-                }
-                is.close();
-                os.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        editedFiles.forEach(f -> f.delete());
-        toRename.forEach(f -> f.renameTo(new File(f.getAbsolutePath().substring(0, f.getAbsolutePath().length() - 4))));
-        return false;
-    }
-
-    /**
      * Returns the {@link ArrayList} of all the files.
      * @return ArrayList of {@link File}
      * @throws NotADirectoryException thrown if the root directory is a file instead
      */
     private ArrayList<File> getAllFiles() throws NotADirectoryException {
-        ArrayList<File> files = new ArrayList<File>();
+        ArrayList<File> files = new ArrayList<>();
         File root = new File(this.rootDirectory);
         if (!root.isDirectory()) {
             throw new NotADirectoryException("Root is not a directory");
@@ -236,14 +212,12 @@ public class Repository implements Serializable {
     private String getFolderDigest() throws NoSuchAlgorithmException, IOException {
         File folder = new File(rootDirectory);
         assert (folder.isDirectory());  // We already checked it, but redo it just for safety
-        Vector<FileInputStream> fileStreams = new Vector<FileInputStream>();
+        Vector<FileInputStream> fileStreams = new Vector<>();
         collectInputStreams(folder, fileStreams, true);
         SequenceInputStream seqStream = new SequenceInputStream(fileStreams.elements());
-
         try {
             String md5Hash = DigestUtils.md5Hex(seqStream);
             seqStream.close();
-            this.digest = md5Hash;
             return md5Hash;
         }
         catch (IOException e) {
@@ -264,7 +238,7 @@ public class Repository implements Serializable {
         assert (fileList != null);
         Arrays.sort(fileList, (f1, f2) -> f1.getName().compareTo(f2.getName())); // Need in reproducible order
 
-        for (File f : fileList) {
+        for (File f : getFiles()) {
             if (includeHiddenFiles || !f.getName().startsWith(".")) {
                 if (f.isDirectory()) {
                     collectInputStreams(f, foundStreams, includeHiddenFiles);

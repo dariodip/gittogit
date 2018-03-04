@@ -1,20 +1,22 @@
 package org.darsquared;
 
 import junit.framework.TestCase;
-import org.darsquared.gitprotocol.GitProtocol;
 import org.darsquared.gitprotocol.GitProtocolImpl;
 import org.darsquared.gitprotocol.Operationmessage;
 import org.darsquared.gitprotocol.storage.DHTStorage;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 public class AppTest extends TestCase {
 
     private DHTStorage storage;
-    private GitProtocol gitProtocol;
-    private final static String INITIAL_STRING = "Initial string";
-    private final static String SECOND_STRING = "Second string";
+    private GitProtocolImpl gitProtocol;
+    private final static String INITIAL_STRING = "Lorem ipsum dolor sit amet";
+    private final static String SECOND_STRING = "Consectetur adipiscing elit";
+    private final static String SEC_INITIAL_STRING = "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua";
+    private final static String SEC_SECOND_STRING = "Ut enim ad minim veniam";
     private final static String NOT_FOUND = "not found";
     private final static String BOOTSTRAP_HN = "127.0.0.1";
     private final static Logger log = Logger.getLogger(DHTTest.class.getName());
@@ -25,6 +27,7 @@ public class AppTest extends TestCase {
     private static final String FAKE_REPO = "somefiles/";
     private static final File REPO = new File(DIRECTORY + FAKE_REPO);
     private static final File REPO_FILE = new File(DIRECTORY + FAKE_REPO + "0");
+    private static final File SEC_REPO_FILE = new File(DIRECTORY + FAKE_REPO + "1");
 
 
     public void setUp() throws Exception {
@@ -40,33 +43,55 @@ public class AppTest extends TestCase {
         assertNull(storage.get("Nothing"));
     }
 
-    public void testGit() throws Exception {
-        assertNotNull(storage);
-        assertNotNull(gitProtocol);
-        assertEquals(readSingleLine(REPO_FILE), INITIAL_STRING);
+    public void testCommitPullPush() throws Exception {
+        assertNotNull(storage);                                 // storage not null
+        assertNotNull(gitProtocol);                             // gitprotocol class not null
+        assertEquals(readSingleLine(REPO_FILE), INITIAL_STRING);    // file gets correct text
         log.info("Creating first commit");
-        assertTrue(gitProtocol.createRepository(REPO_NAME, REPO));
-        log.info("Making first commit");
-        assertTrue(gitProtocol.commit(REPO_NAME, "Initial commit"));
+        assertTrue(gitProtocol.createRepository(REPO_NAME, REPO));  // repo creation ok
+        assertEquals(1, gitProtocol.getCommits().size());
+        log.info("Creating again repo");
+        assertFalse(gitProtocol.createRepository(REPO_NAME, REPO)); // cannot create again repo
         log.info("Trying to make a pull: it should not work");
-        assertEquals(gitProtocol.pull(REPO_NAME), Operationmessage.NO_REPO_FOUND);
+        assertEquals(gitProtocol.pull(REPO_NAME), Operationmessage.NO_REPO_FOUND);  // i'm trying to pull a repo not in dht
         log.info("Making first push");
-        assertEquals(gitProtocol.push(REPO_NAME), Operationmessage.PUSH_SUCCESSFULL);
+        assertEquals(gitProtocol.push(REPO_NAME), Operationmessage.PUSH_SUCCESSFULL); // pushing repo
         log.info("Pulling repo");
-        assertEquals(gitProtocol.pull(REPO_NAME), Operationmessage.NO_FILE_CHANGED);
+        assertEquals(gitProtocol.pull(REPO_NAME), Operationmessage.NO_FILE_CHANGED); // pull repo (no changes)
         log.info("Now let's edit the file a little");
-        writeSingleLine(REPO_FILE, SECOND_STRING);
-        assertEquals(readSingleLine(REPO_FILE), SECOND_STRING);
+
+        writeSingleLine(REPO_FILE, SECOND_STRING);  // write a little edit in file
+        assertEquals(readSingleLine(REPO_FILE), SECOND_STRING);  // was it written?
         log.info("Commit and pull");
-        assertTrue(gitProtocol.commit(REPO_NAME, "A little edit"));
+        assertTrue(gitProtocol.commit(REPO_NAME, "A little edit")); // new commit
         assertEquals(readSingleLine(REPO_FILE), SECOND_STRING);  // unchanged
+        assertTrue(gitProtocol.getCommits().size() == 2);
+        log.info("Pulling repo: it should delete last commit");
         assertEquals(gitProtocol.pull(REPO_NAME), Operationmessage.PULL_SUCCESSFULL);
         assertEquals(readSingleLine(REPO_FILE), INITIAL_STRING);
+        assertEquals(1, gitProtocol.getCommits().size());
+        assertEquals(1, gitProtocol.getFiles().size());
+
+        // Let's put our hands on the second file
+        log.info("Writing second file");
+        writeSingleLine(SEC_REPO_FILE, SEC_INITIAL_STRING);
+        assertEquals(SEC_INITIAL_STRING, readSingleLine(SEC_REPO_FILE));
+        log.info("Now I try to make a commit (it should not work)");
+        assertFalse(gitProtocol.commit(REPO_NAME, "Not a valid commit, second file is not traked"));
+        assertEquals(1, gitProtocol.getCommits().size());
+        log.info("Let's add second file to repo");
+        assertTrue(gitProtocol.addFilesToRepository(REPO_NAME, Arrays.asList(SEC_REPO_FILE)));
+        log.info("Let's do another commit");
+        assertTrue(gitProtocol.commit(REPO_NAME, "Now I'll commit with new file"));
+        log.info("Commit done");
+        assertEquals(2, gitProtocol.getFiles().size());
+        assertEquals(2, gitProtocol.getCommits().size());
     }
 
     public void tearDown() throws Exception {
         super.tearDown();
-     //   writeSingleLine(REPO_FILE, INITIAL_STRING);
+        writeSingleLine(REPO_FILE, INITIAL_STRING);
+        SEC_REPO_FILE.delete();
     }
 
     /*********************************
@@ -74,14 +99,6 @@ public class AppTest extends TestCase {
      *  UTILITY METHODS              *
      *********************************
      *********************************/
-
-    private int countLinesInFile(File f) throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader(f));
-        int count = 0;
-        while(br.readLine() != null) count++;
-        br.close();
-        return count;
-    }
 
     private String readSingleLine(File f) throws IOException {
         BufferedReader br = new BufferedReader(new FileReader(f));

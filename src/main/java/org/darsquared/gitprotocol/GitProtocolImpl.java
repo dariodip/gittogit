@@ -70,12 +70,11 @@ public class GitProtocolImpl implements GitProtocol {
             return false;  // repo does not exist
         }
         try {
-            this.repo.addCommit(_message, _repo_name);
+            return this.repo.addCommit(_message, _repo_name);
         } catch (Exception e ){
             e.printStackTrace();
             return false;
         }
-        return true;
     }
 
     /**
@@ -90,8 +89,8 @@ public class GitProtocolImpl implements GitProtocol {
         try {
             Repository remoteRepo = ((DHTStorage)storage).get(_repo_name); // I am pulling the remote repo (HEAD)
             if (remoteRepo == null || this.repo.getDigests().contains(remoteRepo.getDigest())) { // my repo is correct
-                ((DHTStorage)this.storage).put(_repo_name, this.repo);
-                return Operationmessage.PUSH_SUCCESSFULL;
+                ((DHTStorage)this.storage).put(_repo_name, this.repo);      // putting repo in DHT
+                return Operationmessage.PUSH_SUCCESSFULL;                   // OK!
             } else {        // I am trying to push another branch
                 return  Operationmessage.PULL_REQUIRED;
             }
@@ -129,6 +128,11 @@ public class GitProtocolImpl implements GitProtocol {
     }
 
     public List<Commit> getCommits() {
+        assert this.repo != null;
         return this.repo.getCommits();
+    }
+
+    public List<File> getFiles() {
+        return this.repo.getFiles();
     }
 }
