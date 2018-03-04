@@ -25,6 +25,7 @@ public class Repository implements Serializable {
 
     private final ArrayList<File> files;        // list of files
     private final ArrayList<Commit> commits;    // list of commits
+    public static final String FIRST_COMMIT_MESSAGE = "First commit";
     private String repoName;                    // name of the repository
     private String rootDirectory;               // root directory of the repository
     private String digest;                      // digest with the current file state
@@ -43,7 +44,7 @@ public class Repository implements Serializable {
         this.files = getAllFiles();
         this.digest = getFolderDigest();
         this.commits = new ArrayList<>();
-        commits.add(new Commit("First commit", repoName, this.digest));
+        commits.add(new Commit(FIRST_COMMIT_MESSAGE, repoName, this.digest));
         this.filemap = new HashMap<>();
         for (File f: this.files) {
             this.filemap.put(f, readAllBytes(f.toPath()));
