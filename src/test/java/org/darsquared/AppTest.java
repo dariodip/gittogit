@@ -19,7 +19,7 @@ public class AppTest extends TestCase {
     private final static String SEC_SECOND_STRING = "Ut enim ad minim veniam";
     private final static String NOT_FOUND = "not found";
     private final static String BOOTSTRAP_HN = "127.0.0.1";
-    private final static Logger log = Logger.getLogger(DHTTest.class.getName());
+    private final static Logger log = Logger.getLogger(AppTest.class.getName());
     private final static Integer MASTER_PEER_ID = 0;
     private final static Integer PEER_ID = 1;
     private final static String REPO_NAME = "A_FILE";
