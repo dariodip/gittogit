@@ -8,7 +8,7 @@ public class Operationmessage {
     public final static String PULL_REQUIRED = "Pull required";
     public final static String SOMETHING_GONE_WRONG = "Something gone wrong";
     public final static String NO_FILE_CHANGED = "No file changed";
-
+    public final static String PULL_CONFLICT = "Pull conflict. Do pull again to fetch";
 
 
 }

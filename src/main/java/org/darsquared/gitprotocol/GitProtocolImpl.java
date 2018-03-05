@@ -14,6 +14,7 @@ public class GitProtocolImpl implements GitProtocol {
 
     private final Storage storage;
     private Repository repo;
+    private boolean fetch;
 
     /**
      * Implementation of {@link GitProtocol} interface.
@@ -22,6 +23,7 @@ public class GitProtocolImpl implements GitProtocol {
     public GitProtocolImpl(Storage _storage) {     // dependency injection B-)
         this.storage = _storage;
         this.repo = null;
+        this.fetch = false;
     }
 
     /**
@@ -114,9 +116,14 @@ public class GitProtocolImpl implements GitProtocol {
             if(pulledRepo.getDigest().equals(this.repo.getDigest())) {      // you don't pushed new one
                 return Operationmessage.NO_FILE_CHANGED;                    // :D
             }
+            if (!pulledRepo.getDigests().contains(this.repo.getDigest()) && !this.fetch) { // conflict
+                this.fetch = true;
+                return Operationmessage.PULL_CONFLICT;
+            }
             // if you have arrived here, everything is ok
             this.repo.replaceFilesFromMap(pulledRepo.getFilemap());         // replace files
             this.repo = pulledRepo;                                         // replace repository
+            this.fetch = false;
         } catch (ClassNotFoundException | IOException e) {
             e.printStackTrace();
         }
