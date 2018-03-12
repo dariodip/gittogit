@@ -66,7 +66,8 @@ public class AppTest extends TestCase {
         assertEquals(readSingleLine(REPO_FILE), SECOND_STRING);  // unchanged
         assertTrue(gitProtocol.getCommits().size() == 2);
         log.info("Pulling repo: it should delete last commit");
-        assertEquals(gitProtocol.pull(REPO_NAME), Operationmessage.PULL_SUCCESSFULL);
+        assertEquals(Operationmessage.PULL_CONFLICT, gitProtocol.pull(REPO_NAME));
+        assertEquals(Operationmessage.PULL_SUCCESSFULL, gitProtocol.pull(REPO_NAME));
         assertEquals(readSingleLine(REPO_FILE), INITIAL_STRING);
         assertEquals(1, gitProtocol.getCommits().size());
         assertEquals(1, gitProtocol.getFiles().size());
@@ -87,10 +88,13 @@ public class AppTest extends TestCase {
         assertEquals(2, gitProtocol.getCommits().size());
     }
 
+
     public void tearDown() throws Exception {
         super.tearDown();
         writeSingleLine(REPO_FILE, INITIAL_STRING);
-        SEC_REPO_FILE.delete();
+        if (SEC_REPO_FILE.exists()) {
+            SEC_REPO_FILE.delete();
+        }
     }
 
     /*********************************

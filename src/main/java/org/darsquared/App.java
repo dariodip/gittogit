@@ -121,7 +121,6 @@ public class App {
                     break;
             }
         }
-        //TODO can do some log stuff prior to exit
         terminal.dispose();
         textIO.dispose();
     }
