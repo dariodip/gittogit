@@ -113,7 +113,7 @@ public class GitProtocolImpl implements GitProtocol {
             if (pulledRepo == null) {                                       // no one
                 return Operationmessage.NO_REPO_FOUND;                      // wth do you want to pull?
             }
-            if(pulledRepo.getDigest().equals(this.repo.getDigest())) {      // you don't pushed new one
+            if(pulledRepo.getDigest().equals(this.repo.getDigest())) {      // you didn't push the new one
                 return Operationmessage.NO_FILE_CHANGED;                    // :D
             }
             if (!pulledRepo.getDigests().contains(this.repo.getDigest()) && !this.fetch) { // conflict

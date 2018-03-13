@@ -50,7 +50,7 @@ public class DHTStorage implements Storage<String, Repository> {
     @Override
     public boolean put(String key, Repository data) throws IOException {
         peer.put(Number160.createHash(key)).data(new Data(data)).start().awaitUninterruptibly();
-        return true; // TODO
+        return true;
     }
 
 
