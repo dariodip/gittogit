@@ -83,9 +83,22 @@ le modifiche, ma richiede un ulteriore pull (*fetch*) per modificare i file loca
 Se non sono stati rilevati conflitti, sostituisce i file locali con quelli presenti nel repository.
 
 ## Test
+Nel package `test` sono contenute tutte le classi java rappresentanti le suite di test implementate ed i relativi test case
 
-### App test
+### AppTest
+Testa le funzionalità complete dell'implementazione del protocollo git, in particolare testa:
+* setup di DHT e GitProtocol
+* creazione di un repository
+* non duplicazione di un repository
+* pull si repository non in DHT
+* pull si repository in DHT
+* push su DHT
+* modifica di un file sotto git
+* aggiunta di file al repository
+* commit
 
 ### GitTest
+Testa le funzionalità di gestione di un file sotto git in repository locale, modificandone il contenuto, effettuandone commit e valutando i digest
 
 ### RepositoryTest
+Testa le funzionalità di creazione del repository con test sui file e sui digest.
