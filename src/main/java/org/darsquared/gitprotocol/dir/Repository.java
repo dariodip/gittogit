@@ -5,6 +5,7 @@ import org.darsquared.gitprotocol.Commit;
 import org.darsquared.gitprotocol.dir.exception.NotADirectoryException;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -29,6 +30,10 @@ public class Repository implements Serializable {
     private String repoName;                    // name of the repository
     private String rootDirectory;               // root directory of the repository
     private String digest;                      // digest with the current file state
+
+    public void setRootDirectory(String rootDirectory) {
+        this.rootDirectory = rootDirectory;
+    }
 
     /**
      * Creates a repository.
@@ -133,6 +138,11 @@ public class Repository implements Serializable {
         return true;
     }
 
+    public boolean addCommit(Commit c) {
+        this.commits.add(c);
+        return true;
+    }
+
     /**
      * Replace all the edited files with the new ones.
      * @return true if ok, false otherwise
@@ -141,8 +151,9 @@ public class Repository implements Serializable {
     public boolean replaceFilesFromMap(Map<File,byte[]> filemap) {
         for(File editedFile: filemap.keySet()) {
             OutputStream os = null;
+            File localFile = null;
             try {
-                File localFile = new File(getRootDirectory() + "/" +editedFile.getName());
+                localFile = new File(getRootDirectory() + "/" +editedFile.getName());
                 os = new FileOutputStream(localFile);
                 os.write(filemap.get(editedFile));
                 os.flush();
@@ -151,7 +162,14 @@ public class Repository implements Serializable {
                 e.printStackTrace();
                 return false;
             }
-            this.filemap.put(editedFile,filemap.get(editedFile));
+            try {
+                this.filemap.put(localFile, Files.readAllBytes(localFile.toPath()));
+                if(!this.files.contains(localFile))
+                    this.files.add(localFile);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return false;
+            }
         }
         return true;
     }

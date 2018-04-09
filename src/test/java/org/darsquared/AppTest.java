@@ -12,6 +12,7 @@ import java.util.logging.Logger;
 public class AppTest extends TestCase {
 
     private DHTStorage storage;
+
     private GitProtocolImpl gitProtocol;
     private final static String INITIAL_STRING = "Lorem ipsum dolor sit amet";
     private final static String SECOND_STRING = "Consectetur adipiscing elit";
@@ -20,7 +21,9 @@ public class AppTest extends TestCase {
     private final static String BOOTSTRAP_HN = "127.0.0.1";
     private final static Logger log = Logger.getLogger(AppTest.class.getName());
     private final static Integer MASTER_PEER_ID = 0;
-    private final static Integer PEER_ID = 1;
+    private final static Integer PEER_ID_1 = 1;
+    private final static Integer PEER_ID_2 = 2;
+    private final static Integer PEER_ID_3 = 3;
     private final static String REPO_NAME = "A_FILE";
     private static final String DIRECTORY = "resources/";
     private static final String FAKE_REPO = "somefiles/";
