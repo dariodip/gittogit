@@ -25,7 +25,7 @@ public class Repository implements Serializable {
     private final Map<File, byte[]> filemap;
 
     private final ArrayList<File> files;        // list of files
-    private final ArrayList<Commit> commits;    // list of commits
+    private ArrayList<Commit> commits;    // list of commits
     public static final String FIRST_COMMIT_MESSAGE = "First commit";
     private String repoName;                    // name of the repository
     private String rootDirectory;               // root directory of the repository
@@ -95,6 +95,11 @@ public class Repository implements Serializable {
     public List<Commit> getCommits() {
         assert commits != null;
         return (ArrayList<Commit>) commits.clone();
+    }
+
+    public void setCommits(List<Commit> newCommits) {
+        assert newCommits != null;
+        this.commits = (ArrayList<Commit>) newCommits;
     }
 
     /**

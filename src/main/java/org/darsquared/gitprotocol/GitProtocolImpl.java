@@ -124,9 +124,13 @@ public class GitProtocolImpl implements GitProtocol {
             this.repo.replaceFilesFromMap(pulledRepo.getFilemap());         // replace files
             //Need to save the root directory
             String rootDirectory = this.repo.getRootDirectory();
-            for (Commit commit: pulledRepo.getCommits()) {
-                if(!this.repo.getCommits().contains(commit))
-                    this.repo.addCommit(commit);
+            if (!fetch) {
+                for (Commit commit: pulledRepo.getCommits()) {
+                    if(!this.repo.getCommits().contains(commit))
+                        this.repo.addCommit(commit);
+                }
+            } else {
+                this.repo.setCommits(pulledRepo.getCommits());
             }
             //Restablish the root directory
             this.repo.setRootDirectory(rootDirectory);

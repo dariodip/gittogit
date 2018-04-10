@@ -54,6 +54,7 @@ public class AppTest extends TestCase {
         assertEquals(1, gitProtocol.getCommits().size());
         log.info("Creating again repo");
         assertFalse(gitProtocol.createRepository(REPO_NAME, REPO)); // cannot create again repo
+        assertEquals(1, gitProtocol.getCommits().size());
         log.info("Trying to make a pull: it should not work");
         assertEquals(gitProtocol.pull(REPO_NAME), Operationmessage.NO_REPO_FOUND);  // i'm trying to pull a repo not in dht
         log.info("Making first push");
@@ -61,17 +62,20 @@ public class AppTest extends TestCase {
         log.info("Pulling repo");
         assertEquals(gitProtocol.pull(REPO_NAME), Operationmessage.NO_FILE_CHANGED); // pull repo (no changes)
         log.info("Now let's edit the file a little");
+        assertEquals(1, gitProtocol.getCommits().size());
+
 
         writeSingleLine(REPO_FILE, SECOND_STRING);  // write a little edit in file
         assertEquals(readSingleLine(REPO_FILE), SECOND_STRING);  // was it written?
         log.info("Commit and pull");
         assertTrue(gitProtocol.commit(REPO_NAME, "A little edit")); // new commit
+        assertEquals(2, gitProtocol.getCommits().size());
         assertEquals(readSingleLine(REPO_FILE), SECOND_STRING);  // unchanged
-        assertTrue(gitProtocol.getCommits().size() == 2);
         log.info("Pulling repo: it should delete last commit");
         assertEquals(Operationmessage.PULL_CONFLICT, gitProtocol.pull(REPO_NAME));
         assertEquals(Operationmessage.PULL_SUCCESSFULL, gitProtocol.pull(REPO_NAME));
         assertEquals(readSingleLine(REPO_FILE), INITIAL_STRING);
+        gitProtocol.getCommits().forEach(System.out::println);
         assertEquals(1, gitProtocol.getCommits().size());
         assertEquals(1, gitProtocol.getFiles().size());
 
@@ -79,16 +83,17 @@ public class AppTest extends TestCase {
         log.info("Writing second file");
         writeSingleLine(SEC_REPO_FILE, SEC_INITIAL_STRING);
         assertEquals(SEC_INITIAL_STRING, readSingleLine(SEC_REPO_FILE));
+        assertTrue(gitProtocol.commit(REPO_NAME, "Another commit"));
         log.info("Now I try to make a commit (it should not work)");
+        assertEquals(1, gitProtocol.getFiles().size());
         assertFalse(gitProtocol.commit(REPO_NAME, "Not a valid commit, second file is not traked"));
-        assertEquals(1, gitProtocol.getCommits().size());
         log.info("Let's add second file to repo");
         assertTrue(gitProtocol.addFilesToRepository(REPO_NAME, Arrays.asList(SEC_REPO_FILE)));
         log.info("Let's do another commit");
         assertTrue(gitProtocol.commit(REPO_NAME, "Now I'll commit with new file"));
         log.info("Commit done");
         assertEquals(2, gitProtocol.getFiles().size());
-        assertEquals(2, gitProtocol.getCommits().size());
+        assertEquals(3, gitProtocol.getCommits().size());
     }
 
 
