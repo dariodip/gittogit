@@ -52,4 +52,23 @@ public class Commit implements Serializable{
     public String getDigest() {
         return digest;
     }
+
+    @Override
+    public String toString() {
+        return String.format("[message:%s, repoName:%s, timestamp:%s, digest:%s]",
+                getMessage(), getRepoName(), getTimestamp().toString(), getDigest());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (!Commit.class.isAssignableFrom(obj.getClass())) {
+            return false;
+        }
+        final Commit other = (Commit) obj;
+        return this.getDigest().equals(other.getDigest()) &&
+                this.getRepoName().equals(other.getRepoName());
+    }
 }

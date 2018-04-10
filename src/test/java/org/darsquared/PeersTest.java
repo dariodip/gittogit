@@ -1,17 +1,17 @@
 package org.darsquared;
 
-import jline.internal.Log;
 import junit.framework.TestCase;
-import org.darsquared.gitprotocol.GitProtocol;
 import org.darsquared.gitprotocol.GitProtocolImpl;
 import org.darsquared.gitprotocol.Operationmessage;
 import org.darsquared.gitprotocol.dir.Repository;
 import org.darsquared.gitprotocol.storage.DHTStorage;
 
 import java.io.*;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -78,19 +78,19 @@ public class PeersTest extends TestCase {
 
     public void setUp() throws Exception {
         super.setUp();
-        log.info("Free all repository");
+        log.info("Free all repositories");
         freeRepo();
         log.info("Creating master node");
         storageMaster = new DHTStorage(MASTER_PEER_ID, 4000, BOOTSTRAP_HN, 4000);
         gitProtocolMaster = new GitProtocolImpl(storageMaster);
         log.info("Creating node 1");
-        storage1 = new DHTStorage(PEER_ID_1, 4000, BOOTSTRAP_HN, 4000);
+        storage1 = new DHTStorage(PEER_ID_1, 4001, BOOTSTRAP_HN, 4000);
         gitProtocol1 = new GitProtocolImpl(storage1);
         log.info("Creating node 2");
-        storage2 = new DHTStorage(PEER_ID_2, 4000, BOOTSTRAP_HN, 4000);
+        storage2 = new DHTStorage(PEER_ID_2, 4002, BOOTSTRAP_HN, 4000);
         gitProtocol2 = new GitProtocolImpl(storage2);
         log.info("Creating node 3");
-        storage3 = new DHTStorage(PEER_ID_3, 4000, BOOTSTRAP_HN, 4000);
+        storage3 = new DHTStorage(PEER_ID_3, 4003, BOOTSTRAP_HN, 4000);
         gitProtocol3 = new GitProtocolImpl(storage3);
     }
 
@@ -106,12 +106,12 @@ public class PeersTest extends TestCase {
     }
 
     public void testCommitPullPush() throws Exception {
-        assertNotNull(storageMaster);                                 // storage not null
+        assertNotNull(storageMaster);                            // storage not null
         assertNotNull(storage1);                                 // storage not null
         assertNotNull(storage2);                                 // storage not null
         assertNotNull(storage3);                                 // storage not null
 
-        assertNotNull(gitProtocolMaster);                             // gitprotocol class not null
+        assertNotNull(gitProtocolMaster);                        // gitprotocol class not null
         assertNotNull(gitProtocol1);                             // gitprotocol class not null
         assertNotNull(gitProtocol2);                             // gitprotocol class not null
         assertNotNull(gitProtocol3);                             // gitprotocol class not null
@@ -122,15 +122,16 @@ public class PeersTest extends TestCase {
         assertTrue(gitProtocol2.createRepository(REPO_NAME,REPO2));
         assertTrue(gitProtocol3.createRepository(REPO_NAME,REPO3));
 
-        //Master Peer create a File, add to git, commit and push
+        //Master Peer creates a File, adds it to git, does commit and push
         log.info("Master peer: create a file");
         Path aFile = Files.createFile(Paths.get(MASTER_REPO_FILE.toURI()));
         Files.write(aFile,INITIAL_STRING.getBytes());
+        assertTrue(aFile.toFile().exists());  // check if file is created
         log.info("Master peer: creation complete");
         List<File> toAdd = new ArrayList<>();
-        toAdd.add(aFile.toFile());
+        assertTrue(toAdd.add(aFile.toFile()));
         log.info("Master peer: add");
-        gitProtocolMaster.addFilesToRepository(REPO_NAME, toAdd);
+        assertTrue(gitProtocolMaster.addFilesToRepository(REPO_NAME, toAdd));
         log.info("Master peer: commit");
         assertTrue(gitProtocolMaster.commit(REPO_NAME,Repository.FIRST_COMMIT_MESSAGE));
         log.info("Master peer: push");
@@ -144,7 +145,7 @@ public class PeersTest extends TestCase {
         log.info("Peer 3: pull");
         assertEquals(Operationmessage.PULL_SUCCESSFULL, gitProtocol3.pull(REPO_NAME));
 
-        //Peer 1 edit the file, commit and push
+        //Peer 1 edits the file, then does commit and push
         log.info("Peer 1: editing file");
         Files.write( new File(DIRECTORY + REPO_PEER_1 + "0").toPath(), ("\n"+SECOND_STRING).getBytes(), StandardOpenOption.APPEND);
         log.info("Peer 1: commit");
@@ -207,6 +208,7 @@ public class PeersTest extends TestCase {
 
     public void tearDown() throws Exception {
         super.tearDown();
+       // freeRepo();
 //        writeSingleLine(REPO_FILE, INITIAL_STRING);
 //        SEC_REPO_FILE.delete();
     }
