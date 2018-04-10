@@ -43,8 +43,11 @@ public class PeersTest extends TestCase {
     private static final String REPO_PEER_2 = "peer2/";
     private static final String REPO_PEER_3 = "peer3/";
     private static final File REPO1 = new File(DIRECTORY + REPO_PEER_1);
+    private static final File REPO1_FILE = new File(DIRECTORY + REPO_PEER_1 + "file");
     private static final File REPO2 = new File(DIRECTORY + REPO_PEER_2);
+    private static final File REPO2_FILE = new File(DIRECTORY + REPO_PEER_2 + "file");
     private static final File REPO3 = new File(DIRECTORY + REPO_PEER_3);
+    private static final File REPO3_FILE = new File(DIRECTORY + REPO_PEER_3 + "file");
     private static final File MASTER_REPO = new File(DIRECTORY + REPO_MASTER_PEER);
     private static final File MASTER_REPO_FILE = new File(DIRECTORY + REPO_MASTER_PEER + "0");
     private static final File SEC_MASTER_REPO_FILE = new File(DIRECTORY + REPO_MASTER_PEER + "1");
@@ -117,10 +120,10 @@ public class PeersTest extends TestCase {
         assertNotNull(gitProtocol3);                             // gitprotocol class not null
 
         //All Peers create repository
-        assertTrue(gitProtocolMaster.createRepository(REPO_NAME,MASTER_REPO));
-        assertTrue(gitProtocol1.createRepository(REPO_NAME,REPO1));
-        assertTrue(gitProtocol2.createRepository(REPO_NAME,REPO2));
-        assertTrue(gitProtocol3.createRepository(REPO_NAME,REPO3));
+        assertTrue(gitProtocolMaster.createRepository(REPO_NAME+"master",MASTER_REPO));
+        assertTrue(gitProtocol1.createRepository(REPO_NAME+"1",REPO1));
+        assertTrue(gitProtocol2.createRepository(REPO_NAME+"2",REPO2));
+        assertTrue(gitProtocol3.createRepository(REPO_NAME+"3",REPO3));
 
         //Master Peer create a File, add to git, commit and push
         log.info("Master peer: create a file");
@@ -130,38 +133,82 @@ public class PeersTest extends TestCase {
         List<File> toAdd = new ArrayList<>();
         toAdd.add(aFile.toFile());
         log.info("Master peer: add");
-        gitProtocolMaster.addFilesToRepository(REPO_NAME, toAdd);
+        gitProtocolMaster.addFilesToRepository(REPO_NAME+"master", toAdd);
         log.info("Master peer: commit");
-        assertTrue(gitProtocolMaster.commit(REPO_NAME,Repository.FIRST_COMMIT_MESSAGE));
+        assertTrue(gitProtocolMaster.commit(REPO_NAME+"master",Repository.FIRST_COMMIT_MESSAGE));
         log.info("Master peer: push");
-        assertEquals(Operationmessage.PUSH_SUCCESSFULL,gitProtocolMaster.push(REPO_NAME));
+        assertEquals(Operationmessage.PUSH_SUCCESSFULL,gitProtocolMaster.push(REPO_NAME+"master"));
 
-        //Peer 1, 2, 3 pull the repo
-        log.info("Peer 1: pull");
-        assertEquals(Operationmessage.PULL_SUCCESSFULL, gitProtocol1.pull(REPO_NAME));
-        log.info("Peer 2: pull");
-        assertEquals(Operationmessage.PULL_SUCCESSFULL, gitProtocol2.pull(REPO_NAME));
-        log.info("Peer 3: pull");
-        assertEquals(Operationmessage.PULL_SUCCESSFULL, gitProtocol3.pull(REPO_NAME));
+        //First Peer create a File, add to git, commit and push
+        log.info("First peer: create a file");
+        aFile = Files.createFile(Paths.get(REPO1_FILE.toURI()));
+        Files.write(aFile,INITIAL_STRING.getBytes());
+        log.info("First peer: creation complete");
+        toAdd = new ArrayList<>();
+        toAdd.add(aFile.toFile());
+        log.info("First peer: add");
+        gitProtocol1.addFilesToRepository(REPO_NAME+"1", toAdd);
+        log.info("First peer: commit");
+        assertTrue(gitProtocol1.commit(REPO_NAME+"1",Repository.FIRST_COMMIT_MESSAGE));
+        log.info("First peer: push");
+        assertEquals(Operationmessage.PUSH_SUCCESSFULL,gitProtocol1.push(REPO_NAME+"1"));
 
-        //Peer 1 edit the file, commit and push
-        log.info("Peer 1: editing file");
-        Files.write( new File(DIRECTORY + REPO_PEER_1 + "0").toPath(), ("\n"+SECOND_STRING).getBytes(), StandardOpenOption.APPEND);
-        log.info("Peer 1: commit");
-        assertTrue(gitProtocol1.commit(REPO_NAME, "File edited"));
-        log.info("Peer 1: push");
-        assertEquals(Operationmessage.PUSH_SUCCESSFULL, gitProtocol1.push(REPO_NAME));
-        log.info("Master peer: pull");
-        assertEquals(Operationmessage.PULL_SUCCESSFULL, gitProtocolMaster.pull(REPO_NAME));
-        log.info("Peer 2: pull");
-        assertEquals(Operationmessage.PULL_SUCCESSFULL, gitProtocol2.pull(REPO_NAME));
-        log.info("Peer 3: pull");
-        assertEquals(Operationmessage.PULL_SUCCESSFULL, gitProtocol3.pull(REPO_NAME));
+        //Second Peer create a File, add to git, commit and push
+        log.info("Second peer: create a file");
+        aFile = Files.createFile(Paths.get(REPO2_FILE.toURI()));
+        Files.write(aFile,INITIAL_STRING.getBytes());
+        log.info("Second peer: creation complete");
+        toAdd = new ArrayList<>();
+        toAdd.add(aFile.toFile());
+        log.info("Second peer: add");
+        gitProtocol2.addFilesToRepository(REPO_NAME+"2", toAdd);
+        log.info("Second peer: commit");
+        assertTrue(gitProtocol2.commit(REPO_NAME+"2",Repository.FIRST_COMMIT_MESSAGE));
+        log.info("Second peer: push");
+        assertEquals(Operationmessage.PUSH_SUCCESSFULL,gitProtocol2.push(REPO_NAME+"2"));
 
-        assertEquals(2,Files.readAllLines(gitProtocolMaster.getFiles().get(0).toPath()).size());
-        assertEquals(2,Files.readAllLines(gitProtocol1.getFiles().get(0).toPath()).size());
-        assertEquals(2,Files.readAllLines(gitProtocol2.getFiles().get(0).toPath()).size());
-        assertEquals(2,Files.readAllLines(gitProtocol3.getFiles().get(0).toPath()).size());
+        //Third Peer create a File, add to git, commit and push
+        log.info("Third peer: create a file");
+        aFile = Files.createFile(Paths.get(REPO3_FILE.toURI()));
+        Files.write(aFile,INITIAL_STRING.getBytes());
+        log.info("Third peer: creation complete");
+        toAdd = new ArrayList<>();
+        toAdd.add(aFile.toFile());
+        log.info("Third peer: add");
+        gitProtocol3.addFilesToRepository(REPO_NAME+"3", toAdd);
+        log.info("Third peer: commit");
+        assertTrue(gitProtocol3.commit(REPO_NAME+"3",Repository.FIRST_COMMIT_MESSAGE));
+        log.info("Third peer: push");
+        assertEquals(Operationmessage.PUSH_SUCCESSFULL,gitProtocol3.push(REPO_NAME+"3"));
+
+        //TODO Valutare se rimuovere il codice commentato
+
+//        //Peer 1, 2, 3 pull the repo
+//        log.info("Peer 1: pull");
+//        assertEquals(Operationmessage.PULL_SUCCESSFULL, gitProtocol1.pull(REPO_NAME));
+//        log.info("Peer 2: pull");
+//        assertEquals(Operationmessage.PULL_SUCCESSFULL, gitProtocol2.pull(REPO_NAME));
+//        log.info("Peer 3: pull");
+//        assertEquals(Operationmessage.PULL_SUCCESSFULL, gitProtocol3.pull(REPO_NAME));
+//
+//        //Peer 1 edit the file, commit and push
+//        log.info("Peer 1: editing file");
+//        Files.write( new File(DIRECTORY + REPO_PEER_1 + "0").toPath(), ("\n"+SECOND_STRING).getBytes(), StandardOpenOption.APPEND);
+//        log.info("Peer 1: commit");
+//        assertTrue(gitProtocol1.commit(REPO_NAME, "File edited"));
+//        log.info("Peer 1: push");
+//        assertEquals(Operationmessage.PUSH_SUCCESSFULL, gitProtocol1.push(REPO_NAME));
+//        log.info("Master peer: pull");
+//        assertEquals(Operationmessage.PULL_SUCCESSFULL, gitProtocolMaster.pull(REPO_NAME));
+//        log.info("Peer 2: pull");
+//        assertEquals(Operationmessage.PULL_SUCCESSFULL, gitProtocol2.pull(REPO_NAME));
+//        log.info("Peer 3: pull");
+//        assertEquals(Operationmessage.PULL_SUCCESSFULL, gitProtocol3.pull(REPO_NAME));
+//
+//        assertEquals(2,Files.readAllLines(gitProtocolMaster.getFiles().get(0).toPath()).size());
+//        assertEquals(2,Files.readAllLines(gitProtocol1.getFiles().get(0).toPath()).size());
+//        assertEquals(2,Files.readAllLines(gitProtocol2.getFiles().get(0).toPath()).size());
+//        assertEquals(2,Files.readAllLines(gitProtocol3.getFiles().get(0).toPath()).size());
 
 //        assertEquals(readSingleLine(REPO_FILE), INITIAL_STRING);    // file gets correct text
 //        log.info("Creating first commit");
