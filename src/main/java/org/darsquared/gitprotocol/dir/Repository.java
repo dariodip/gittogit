@@ -206,7 +206,7 @@ public class Repository implements Serializable {
         File[] fList = directory.listFiles();
         assert fList != null;
         for (File file : fList) {
-            if (file.isFile()) {
+            if (file.isFile() && !file.getName().equals(".DS_Store")) {
                 files.add(file);
             } else if (file.isDirectory()) {
                 fileList(file.getAbsolutePath(), files);
