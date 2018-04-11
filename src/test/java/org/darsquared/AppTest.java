@@ -63,8 +63,6 @@ public class AppTest extends TestCase {
         assertEquals(gitProtocol.pull(REPO_NAME), Operationmessage.NO_FILE_CHANGED); // pull repo (no changes)
         log.info("Now let's edit the file a little");
         assertEquals(1, gitProtocol.getCommits().size());
-
-
         writeSingleLine(REPO_FILE, SECOND_STRING);  // write a little edit in file
         assertEquals(readSingleLine(REPO_FILE), SECOND_STRING);  // was it written?
         log.info("Commit and pull");
@@ -77,7 +75,8 @@ public class AppTest extends TestCase {
         assertEquals(readSingleLine(REPO_FILE), INITIAL_STRING);
         gitProtocol.getCommits().forEach(System.out::println);
         assertEquals(1, gitProtocol.getCommits().size());
-        assertEquals(1, gitProtocol.getFiles().size());
+        gitProtocol.getFiles().forEach(System.out::println);
+        assertEquals(1 + 1, gitProtocol.getFiles().size()); // one + .DS_store
 
         // Let's put our hands on the second file
         log.info("Writing second file");
@@ -85,14 +84,14 @@ public class AppTest extends TestCase {
         assertEquals(SEC_INITIAL_STRING, readSingleLine(SEC_REPO_FILE));
         assertTrue(gitProtocol.commit(REPO_NAME, "Another commit"));
         log.info("Now I try to make a commit (it should not work)");
-        assertEquals(1, gitProtocol.getFiles().size());
-        assertFalse(gitProtocol.commit(REPO_NAME, "Not a valid commit, second file is not traked"));
+        assertEquals(1 + 1, gitProtocol.getFiles().size()); // one + .DS_store
+        assertFalse(gitProtocol.commit(REPO_NAME, "Not a valid commit, second file is not tracked"));
         log.info("Let's add second file to repo");
         assertTrue(gitProtocol.addFilesToRepository(REPO_NAME, Arrays.asList(SEC_REPO_FILE)));
         log.info("Let's do another commit");
         assertTrue(gitProtocol.commit(REPO_NAME, "Now I'll commit with new file"));
         log.info("Commit done");
-        assertEquals(2, gitProtocol.getFiles().size());
+        assertEquals(2 + 1, gitProtocol.getFiles().size()); // two + .DS_store
         assertEquals(3, gitProtocol.getCommits().size());
     }
 

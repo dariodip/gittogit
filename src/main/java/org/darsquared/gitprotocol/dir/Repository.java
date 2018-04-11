@@ -237,7 +237,7 @@ public class Repository implements Serializable {
         File folder = new File(rootDirectory);
         assert (folder.isDirectory());  // We already checked it, but redo it just for safety
         Vector<FileInputStream> fileStreams = new Vector<>();
-        collectInputStreams(folder, fileStreams, true);
+        collectInputStreams(folder, fileStreams, false);
         SequenceInputStream seqStream = new SequenceInputStream(fileStreams.elements());
         try {
             String md5Hash = DigestUtils.md5Hex(seqStream);
