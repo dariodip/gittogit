@@ -63,8 +63,6 @@ public class AppTest extends TestCase {
         assertEquals(gitProtocol.pull(REPO_NAME), Operationmessage.NO_FILE_CHANGED); // pull repo (no changes)
         log.info("Now let's edit the file a little");
         assertEquals(1, gitProtocol.getCommits().size());
-
-
         writeSingleLine(REPO_FILE, SECOND_STRING);  // write a little edit in file
         assertEquals(readSingleLine(REPO_FILE), SECOND_STRING);  // was it written?
         log.info("Commit and pull");
@@ -77,6 +75,7 @@ public class AppTest extends TestCase {
         assertEquals(readSingleLine(REPO_FILE), INITIAL_STRING);
         gitProtocol.getCommits().forEach(System.out::println);
         assertEquals(1, gitProtocol.getCommits().size());
+        gitProtocol.getFiles().forEach(System.out::println);
         assertEquals(1, gitProtocol.getFiles().size());
 
         // Let's put our hands on the second file
@@ -86,7 +85,7 @@ public class AppTest extends TestCase {
         assertTrue(gitProtocol.commit(REPO_NAME, "Another commit"));
         log.info("Now I try to make a commit (it should not work)");
         assertEquals(1, gitProtocol.getFiles().size());
-        assertFalse(gitProtocol.commit(REPO_NAME, "Not a valid commit, second file is not traked"));
+        assertFalse(gitProtocol.commit(REPO_NAME, "Not a valid commit, second file is not tracked"));
         log.info("Let's add second file to repo");
         assertTrue(gitProtocol.addFilesToRepository(REPO_NAME, Arrays.asList(SEC_REPO_FILE)));
         log.info("Let's do another commit");
