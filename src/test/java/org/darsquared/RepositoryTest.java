@@ -29,7 +29,7 @@ public class RepositoryTest extends TestCase {
         Repository repo = new Repository(DIRECTORY + FAKE_REPO, FAKE_REPO);
         assertNotNull(repo);
         logger.info("Repository successfully created.");
-        assertEquals(repo.getFiles().size(), 1);
+        assertEquals(1, repo.getFiles().size());
         assertNotNull(repo.getDigest());
         assertTrue(repo.getDigest().length() >= 1);
         logger.info("Repository has digest : " + repo.getDigest());
@@ -40,7 +40,7 @@ public class RepositoryTest extends TestCase {
         Repository repo = new Repository(DIRECTORY + FAKE_REPO, FAKE_REPO);
         assertNotNull(repo);
         logger.info("First repository successfully created.");
-        assertEquals(repo.getFiles().size(), 1);
+        assertEquals(1, repo.getFiles().size());
         assertNotNull(repo.getDigest());
         assertTrue(repo.getDigest().length() >= 1);
         logger.info("First repository has digest : " + repo.getDigest());
@@ -49,7 +49,7 @@ public class RepositoryTest extends TestCase {
         Repository repo2 = new Repository(DIRECTORY + FAKE_REPO, FAKE_REPO);
         assertNotNull(repo2);
         logger.info("Second repository successfully created.");
-        assertEquals(repo2.getFiles().size(), 1);
+        assertEquals(1, repo2.getFiles().size());
         assertNotNull(repo2.getDigest());
         assertTrue(repo2.getDigest().length() >= 1);
         logger.info("Second repository has digest : " + repo2.getDigest());

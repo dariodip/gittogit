@@ -5,6 +5,7 @@ import org.darsquared.gitprotocol.Commit;
 import org.darsquared.gitprotocol.dir.exception.NotADirectoryException;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -24,11 +25,15 @@ public class Repository implements Serializable {
     private final Map<File, byte[]> filemap;
 
     private final ArrayList<File> files;        // list of files
-    private final ArrayList<Commit> commits;    // list of commits
+    private ArrayList<Commit> commits;    // list of commits
     public static final String FIRST_COMMIT_MESSAGE = "First commit";
     private String repoName;                    // name of the repository
     private String rootDirectory;               // root directory of the repository
     private String digest;                      // digest with the current file state
+
+    public void setRootDirectory(String rootDirectory) {
+        this.rootDirectory = rootDirectory;
+    }
 
     /**
      * Creates a repository.
@@ -92,6 +97,11 @@ public class Repository implements Serializable {
         return (ArrayList<Commit>) commits.clone();
     }
 
+    public void setCommits(List<Commit> newCommits) {
+        assert newCommits != null;
+        this.commits = (ArrayList<Commit>) newCommits;
+    }
+
     /**
      * Adds new files to the repository so that they can be tracked.
      * @param files {@link List} of {@link File}.
@@ -133,6 +143,11 @@ public class Repository implements Serializable {
         return true;
     }
 
+    public boolean addCommit(Commit c) {
+        this.commits.add(c);
+        return true;
+    }
+
     /**
      * Replace all the edited files with the new ones.
      * @return true if ok, false otherwise
@@ -141,8 +156,9 @@ public class Repository implements Serializable {
     public boolean replaceFilesFromMap(Map<File,byte[]> filemap) {
         for(File editedFile: filemap.keySet()) {
             OutputStream os = null;
+            File localFile = null;
             try {
-                File localFile = new File(getRootDirectory() + "/" +editedFile.getName());
+                localFile = new File(getRootDirectory() + "/" +editedFile.getName());
                 os = new FileOutputStream(localFile);
                 os.write(filemap.get(editedFile));
                 os.flush();
@@ -151,7 +167,14 @@ public class Repository implements Serializable {
                 e.printStackTrace();
                 return false;
             }
-            this.filemap.put(editedFile,filemap.get(editedFile));
+            try {
+                this.filemap.put(localFile, Files.readAllBytes(localFile.toPath()));
+                if(!this.files.contains(localFile))
+                    this.files.add(localFile);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return false;
+            }
         }
         return true;
     }
@@ -183,7 +206,7 @@ public class Repository implements Serializable {
         File[] fList = directory.listFiles();
         assert fList != null;
         for (File file : fList) {
-            if (file.isFile()) {
+            if (file.isFile() && !file.getName().equals(".DS_Store")) {
                 files.add(file);
             } else if (file.isDirectory()) {
                 fileList(file.getAbsolutePath(), files);
@@ -214,7 +237,7 @@ public class Repository implements Serializable {
         File folder = new File(rootDirectory);
         assert (folder.isDirectory());  // We already checked it, but redo it just for safety
         Vector<FileInputStream> fileStreams = new Vector<>();
-        collectInputStreams(folder, fileStreams, true);
+        collectInputStreams(folder, fileStreams, false);
         SequenceInputStream seqStream = new SequenceInputStream(fileStreams.elements());
         try {
             String md5Hash = DigestUtils.md5Hex(seqStream);

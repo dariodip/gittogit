@@ -113,7 +113,7 @@ public class GitProtocolImpl implements GitProtocol {
             if (pulledRepo == null) {                                       // no one
                 return Operationmessage.NO_REPO_FOUND;                      // wth do you want to pull?
             }
-            if(pulledRepo.getDigest().equals(this.repo.getDigest())) {      // you don't pushed new one
+            if(pulledRepo.getDigest().equals(this.repo.getDigest())) {      // you didn't push the new one
                 return Operationmessage.NO_FILE_CHANGED;                    // :D
             }
             if (!pulledRepo.getDigests().contains(this.repo.getDigest()) && !this.fetch) { // conflict
@@ -122,7 +122,18 @@ public class GitProtocolImpl implements GitProtocol {
             }
             // if you have arrived here, everything is ok
             this.repo.replaceFilesFromMap(pulledRepo.getFilemap());         // replace files
-            this.repo = pulledRepo;                                         // replace repository
+            //Need to save the root directory
+            String rootDirectory = this.repo.getRootDirectory();
+            if (!fetch) {
+                for (Commit commit: pulledRepo.getCommits()) {
+                    if(!this.repo.getCommits().contains(commit))
+                        this.repo.addCommit(commit);
+                }
+            } else {
+                this.repo.setCommits(pulledRepo.getCommits());
+            }
+            //Restablish the root directory
+            this.repo.setRootDirectory(rootDirectory);
             this.fetch = false;
         } catch (ClassNotFoundException | IOException e) {
             e.printStackTrace();

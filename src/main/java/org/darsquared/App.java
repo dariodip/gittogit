@@ -25,18 +25,21 @@ public class App {
     private static Logger logger = Logger.getLogger(App.class.getName());
 
     public static void main(String[] args) {
+        TextIO textIO = TextIoFactory.getTextIO();
+        TextTerminal terminal = textIO.getTextTerminal();
+        terminal.println("************ WELCOME INTO DSQUAREDGIT ************");
+        terminal.printf(help);
+        int id = textIO.newIntInputReader()
+                .read("Inserisci il tuo id: ");
+
         GitProtocol git = null;
         try {
-            git = new GitProtocolImpl(new DHTStorage(0, 4000, "127.0.0.1", 4000));
+            git = new GitProtocolImpl(new DHTStorage(id, 4000, "127.0.0.1", 4000));
         } catch (IOException e) {
             logger.severe("Error while instantiating GitProtocol");
             e.printStackTrace();
             return;
         }
-        TextIO textIO = TextIoFactory.getTextIO();
-        TextTerminal terminal = textIO.getTextTerminal();
-        terminal.println("************ WELCOME INTO DSQUAREDGIT ************");
-        terminal.printf(help);
         boolean interactive = true;
         while (interactive) {
             String input = textIO.newStringInputReader()
