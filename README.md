@@ -1,5 +1,7 @@
 # Git to Git
 
+[![Build Status](https://travis-ci.org/dariodip/gittogit.svg?branch=master)](https://travis-ci.org/dariodip/gittogit)
+
 Una semplice implementazione di un peer git basato su DHT (Tomp2p).
 Ogni client può:
 1. creare un repository in una directory; 
